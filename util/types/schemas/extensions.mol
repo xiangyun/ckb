@@ -181,6 +181,7 @@ vector IndexTransactionVec <IndexTransaction>;
 
 /* Types for Network/Sync */
 
+// Filter realted messages are moved to FilterMessage, keep them in SyncMessage unicon struct for compatibility
 union SyncMessage {
     GetHeaders,
     SendHeaders,
@@ -210,6 +211,19 @@ table SendBlock {
     block:                  Block,
 }
 
+table InIBD {
+}
+
+/* Types for Network/Filter */
+union FilterMessage {
+    SetFilter,
+    AddFilter,
+    ClearFilter,
+    FilteredBlock,
+    GetFilteredBlocks,
+    FilteredBlocks,
+}
+
 table SetFilter {
     hash_seed:              Uint32,
     filter:                 Bytes,
@@ -223,18 +237,28 @@ table AddFilter {
 table ClearFilter {
 }
 
+option FilteredTransactionsOpt (FilteredTransactions);
+vector FilteredTransactionsVec <FilteredTransactions>;
+
 table FilteredBlock {
     header:                 Header,
+    transactions:           FilteredTransactionsOpt,
+}
+
+table FilteredTransactions {
     transactions:           TransactionVec,
-    proof:                  MerkleProof,
+    proof_indices:          Uint32Vec,
+    proof_lemmas:           Byte32Vec,
 }
 
-table MerkleProof {
-    indices:                Uint32Vec,
-    lemmas:                 Byte32Vec,
+table GetFilteredBlocks {
+    block_hashes:           Byte32Vec,
 }
 
-table InIBD {
+table FilteredBlocks {
+    unmatched_block_hashes: Byte32Vec,
+    matched_block_hashes:   Byte32Vec,
+    matched_blocks:         FilteredTransactionsVec,
 }
 
 /* Types for Network/Others */

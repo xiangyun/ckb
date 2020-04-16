@@ -16,6 +16,7 @@ pub enum SupportProtocols {
     Relay,
     Time,
     Alert,
+    BloomFilter,
 }
 
 impl SupportProtocols {
@@ -30,6 +31,7 @@ impl SupportProtocols {
             SupportProtocols::Relay => 101,
             SupportProtocols::Time => 102,
             SupportProtocols::Alert => 110,
+            SupportProtocols::BloomFilter => 200,
         }
         .into()
     }
@@ -45,6 +47,7 @@ impl SupportProtocols {
             SupportProtocols::Relay => "/ckb/rel",
             SupportProtocols::Time => "/ckb/tim",
             SupportProtocols::Alert => "/ckb/alt",
+            SupportProtocols::BloomFilter => "ckb/bloomfilter",
         }
         .to_owned()
     }
@@ -63,20 +66,22 @@ impl SupportProtocols {
             SupportProtocols::Relay => vec!["1".to_owned()],
             SupportProtocols::Time => vec!["1".to_owned()],
             SupportProtocols::Alert => vec!["1".to_owned()],
+            SupportProtocols::BloomFilter => vec!["1".to_owned()],
         }
     }
 
     pub fn max_frame_length(&self) -> usize {
         match self {
-            SupportProtocols::Ping => 1024,              // 1   KB
-            SupportProtocols::Discovery => 512 * 1024,   // 512 KB
-            SupportProtocols::Identify => 2 * 1024,      // 2   KB
-            SupportProtocols::Feeler => 1024,            // 1   KB
-            SupportProtocols::DisconnectMessage => 1024, // 1   KB
-            SupportProtocols::Sync => 2 * 1024 * 1024,   // 2   MB
-            SupportProtocols::Relay => 4 * 1024 * 1024,  // 4   MB
-            SupportProtocols::Time => 1024,              // 1   KB
-            SupportProtocols::Alert => 128 * 1024,       // 128 KB
+            SupportProtocols::Ping => 1024,                   // 1   KB
+            SupportProtocols::Discovery => 512 * 1024,        // 512 KB
+            SupportProtocols::Identify => 2 * 1024,           // 2   KB
+            SupportProtocols::Feeler => 1024,                 // 1   KB
+            SupportProtocols::DisconnectMessage => 1024,      // 1   KB
+            SupportProtocols::Sync => 2 * 1024 * 1024,        // 2   MB
+            SupportProtocols::Relay => 4 * 1024 * 1024,       // 4   MB
+            SupportProtocols::Time => 1024,                   // 1   KB
+            SupportProtocols::Alert => 128 * 1024,            // 128 KB
+            SupportProtocols::BloomFilter => 4 * 1024 * 1024, // 4   MB
         }
     }
 
@@ -93,7 +98,7 @@ impl SupportProtocols {
                 no_blocking_flag.disable_all();
                 no_blocking_flag
             }
-            SupportProtocols::Sync | SupportProtocols::Relay => {
+            SupportProtocols::Sync | SupportProtocols::Relay | SupportProtocols::BloomFilter => {
                 let mut blocking_recv_flag = BlockingFlag::default();
                 blocking_recv_flag.disable_connected();
                 blocking_recv_flag.disable_disconnected();

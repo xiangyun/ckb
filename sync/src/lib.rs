@@ -4,6 +4,7 @@
 //! https://github.com/nervosnetwork/rfcs/tree/master/rfcs/0000-block-sync-protocol
 
 mod block_status;
+mod filter;
 mod net_time_checker;
 mod orphan_block_pool;
 mod relayer;
@@ -14,6 +15,7 @@ mod types;
 #[cfg(test)]
 mod tests;
 
+pub use crate::filter::{new_filter, Filter, FilterProtocol};
 pub use crate::net_time_checker::NetTimeProtocol;
 pub use crate::relayer::Relayer;
 pub use crate::status::{Status, StatusCode};

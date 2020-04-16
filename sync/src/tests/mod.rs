@@ -15,7 +15,7 @@ mod inflight_blocks;
 mod sync_shared;
 #[cfg(not(disable_faketime))]
 mod synchronizer;
-mod util;
+pub(crate) mod util;
 
 const DEFAULT_CHANNEL: usize = 128;
 

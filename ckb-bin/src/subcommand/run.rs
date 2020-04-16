@@ -12,7 +12,7 @@ use ckb_resource::Resource;
 use ckb_rpc::{RpcServer, ServiceBuilder};
 use ckb_shared::shared::{Shared, SharedBuilder};
 use ckb_store::ChainStore;
-use ckb_sync::{NetTimeProtocol, Relayer, SyncShared, Synchronizer};
+use ckb_sync::{FilterProtocol, NetTimeProtocol, Relayer, SyncShared, Synchronizer};
 use ckb_types::{core::cell::setup_system_cell_cache, prelude::*};
 use ckb_verification::{GenesisVerifier, Verifier};
 use std::sync::Arc;
@@ -80,6 +80,7 @@ pub fn run(args: RunArgs, version: Version) -> Result<(), ExitCode> {
         args.config.tx_pool.min_fee_rate,
         args.config.tx_pool.max_tx_verify_cycles,
     );
+    let filter = FilterProtocol::new(shared.notify_controller(), Arc::clone(&sync_shared));
     let net_timer = NetTimeProtocol::default();
     let alert_signature_config = args.config.alert_signature.unwrap_or_default();
     let alert_relayer = AlertRelayer::new(
@@ -110,6 +111,11 @@ pub fn run(args: RunArgs, version: Version) -> Result<(), ExitCode> {
         CKBProtocol::new_with_support_protocol(
             SupportProtocols::Alert,
             Box::new(alert_relayer),
+            Arc::clone(&network_state),
+        ),
+        CKBProtocol::new_with_support_protocol(
+            SupportProtocols::BloomFilter,
+            Box::new(filter),
             Arc::clone(&network_state),
         ),
     ];

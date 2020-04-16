@@ -19,6 +19,7 @@ bitflags = "1.0"
 ckb-verification = { path = "../verification" }
 ckb-chain-spec = { path = "../spec" }
 ckb-traits = { path = "../traits" }
+ckb-notify = { path = "../notify" }
 failure = "0.1.5"
 lru-cache = { git = "https://github.com/nervosnetwork/lru-cache", rev = "a35fdb8" }
 sentry = "0.16.0"
@@ -26,6 +27,7 @@ futures = "0.3"
 ckb-error = {path = "../error"}
 ckb-tx-pool = { path = "../tx-pool" }
 ckb-fee-estimator = { path = "../util/fee-estimator" }
+bloom-filters = { git = "https://github.com/nervosnetwork/bloom-filters" }
 crossbeam-channel = "0.3"
 ratelimit_meter = "5.0"
 tempfile = "3.0"
