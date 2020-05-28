@@ -47,6 +47,8 @@ pub enum SupportProtocols {
     /// Alert: A protocol reserved by the Nervos Foundation to publish network-wide announcements.
     /// Any information sent from the protocol is verified by multi-signature
     Alert,
+    /// GCS Filter Protocol
+    GcsFilter,
 }
 
 impl SupportProtocols {
@@ -62,6 +64,7 @@ impl SupportProtocols {
             SupportProtocols::Relay => 101,
             SupportProtocols::Time => 102,
             SupportProtocols::Alert => 110,
+            SupportProtocols::GcsFilter => 201,
         }
         .into()
     }
@@ -78,6 +81,7 @@ impl SupportProtocols {
             SupportProtocols::Relay => "/ckb/rel",
             SupportProtocols::Time => "/ckb/tim",
             SupportProtocols::Alert => "/ckb/alt",
+            SupportProtocols::GcsFilter => "/ckb/gcs"
         }
         .to_owned()
     }
@@ -97,6 +101,7 @@ impl SupportProtocols {
             SupportProtocols::Relay => vec!["1".to_owned()],
             SupportProtocols::Time => vec!["1".to_owned()],
             SupportProtocols::Alert => vec!["1".to_owned()],
+            SupportProtocols::GcsFilter => vec!["1".to_owned()],
         }
     }
 
@@ -112,6 +117,7 @@ impl SupportProtocols {
             SupportProtocols::Relay => 4 * 1024 * 1024,  // 4   MB
             SupportProtocols::Time => 1024,              // 1   KB
             SupportProtocols::Alert => 128 * 1024,       // 128 KB
+            SupportProtocols::GcsFilter => 512 * 1024,   // 512 KB
         }
     }
 
@@ -129,7 +135,7 @@ impl SupportProtocols {
                 no_blocking_flag.disable_all();
                 no_blocking_flag
             }
-            SupportProtocols::Sync | SupportProtocols::Relay => {
+            SupportProtocols::Sync | SupportProtocols::Relay | SupportProtocols::GcsFilter => {
                 let mut blocking_recv_flag = BlockingFlag::default();
                 blocking_recv_flag.disable_connected();
                 blocking_recv_flag.disable_disconnected();

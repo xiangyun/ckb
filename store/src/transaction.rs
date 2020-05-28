@@ -8,7 +8,7 @@ use ckb_db_schema::{
     Col, COLUMN_BLOCK_BODY, COLUMN_BLOCK_EPOCH, COLUMN_BLOCK_EXT, COLUMN_BLOCK_HEADER,
     COLUMN_BLOCK_PROPOSAL_IDS, COLUMN_BLOCK_UNCLE, COLUMN_CELL, COLUMN_CELL_DATA, COLUMN_EPOCH,
     COLUMN_INDEX, COLUMN_META, COLUMN_NUMBER_HASH, COLUMN_TRANSACTION_INFO, COLUMN_UNCLES,
-    META_CURRENT_EPOCH_KEY, META_TIP_HEADER_KEY,
+    META_CURRENT_EPOCH_KEY, META_TIP_HEADER_KEY, COLUMN_GCS_FILTER
 };
 use ckb_error::Error;
 use ckb_freezer::Freezer;
@@ -140,6 +140,8 @@ impl StoreTransaction {
             hash.as_slice(),
             proposals.as_slice(),
         )?;
+        let mut filter_writer = std::io::Cursor::new(Vec::new());
+        let mut filter = build_gcs_filter(&mut filter_writer);
         for (index, tx) in block.transactions().into_iter().enumerate() {
             let key = packed::TransactionKey::new_builder()
                 .block_hash(hash.clone())
@@ -147,7 +149,31 @@ impl StoreTransaction {
                 .build();
             let tx_data = tx.pack();
             self.insert_raw(COLUMN_BLOCK_BODY, key.as_slice(), tx_data.as_slice())?;
+
+            for output in tx.outputs() {
+                filter.add_element(output.calc_lock_hash().as_slice());
+                if let Some(type_script) = output.type_().to_opt() {
+                    filter.add_element(type_script.calc_script_hash().as_slice());
+                }
+            }
+
+            for out_point in tx.input_pts_iter() {
+                if let Some(cell_meta) = self.get_cell(&out_point) {
+                    filter.add_element(cell_meta.cell_output.calc_lock_hash().as_slice());
+                    if let Some(type_script) = cell_meta.cell_output.type_().to_opt() {
+                        filter.add_element(type_script.calc_script_hash().as_slice());
+                    }
+                }
+            }
         }
+        filter
+            .finish()
+            .expect("flush to memory writer should be OK");
+        self.insert_raw(
+            COLUMN_GCS_FILTER,
+            hash.as_slice(),
+            filter_writer.into_inner().as_slice(),
+        )?;
         Ok(())
     }
 
@@ -292,4 +318,11 @@ impl StoreTransaction {
         }
         Ok(())
     }
+}
+
+fn build_gcs_filter(out: &mut dyn std::io::Write) -> golomb_coded_set::GCSFilterWriter {
+    // use same value as bip158
+    let p = 19;
+    let m = 1.497_137 * f64::from(2u32.pow(p));
+    golomb_coded_set::GCSFilterWriter::new(out, 0, 0, m as u64, p as u8)
 }

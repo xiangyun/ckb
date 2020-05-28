@@ -239,3 +239,43 @@ table Identify {
     name:                       Bytes,          // Network Name
     client_version:             Bytes,
 }
+
+union GcsFilterMessage {
+    GetGcsFilters,
+    GcsFilter,
+    GetGcsFilterHashes,
+    GcsFilterHashes,
+    GetGcsFilterCheckPoint,
+    GcsFilterCheckPoint,
+}
+
+struct GetGcsFilters {
+    start_number:           Uint64,         // The height of the first block in the requested range
+    stop_hash:              Byte32,         // The hash of the last block in the requested range
+}
+
+table GcsFilter {
+    block_hash:             Byte32,         // Hash of the block for which the filter is being returned
+    filter:                 Bytes,          // The serialized filter for this block
+}
+
+struct GetGcsFilterHashes {
+    start_number:           Uint64,         // The height of the first block in the requested range
+    stop_hash:              Byte32,         // The hash of the last block in the requested range
+}
+
+table GcsFilterHashes {
+    stop_hash:              Byte32,         // The hash of the last block in the requested range
+    parent_hash:            Byte32,         // The filter header preceding the first block in the requested range
+    filter_hashes:          Byte32Vec,      // The filter hashes for each block in the requested range
+}
+
+struct GetGcsFilterCheckPoint {
+    stop_hash:              Byte32,         // The hash of the last block in the chain that headers are requested for
+    interval:               Uint32,         // The interval of check point, min value is 200000
+}
+
+table GcsFilterCheckPoint {
+    stop_hash:              Byte32,         // The hash of the last block in the chain that headers are requested for
+    filter_hashes:          Byte32Vec,      // The filter hashes at intervals of requested for
+}

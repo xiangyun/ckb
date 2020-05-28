@@ -31,7 +31,7 @@ if [ "$EXIT_CODE" != 0 ] && [ "${TRAVIS_REPO_SLUG:-nervosnetwork/ckb}" = "nervos
   if ! command -v sentry-cli &> /dev/null; then
     curl -sL https://sentry.io/get-cli/ | bash
   fi
-  export SENTRY_DSN="https://15373165fbf2439b99ba46684dfbcb12@sentry.nervos.org/7"
+  # export SENTRY_DSN="https://15373165fbf2439b99ba46684dfbcb12@sentry.nervos.org/7"
   CKB_BIN="../target/debug/ckb"
 
   while [[ "$#" > 1 ]]; do

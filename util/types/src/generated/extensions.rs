@@ -12737,3 +12737,1759 @@ impl molecule::prelude::Builder for IdentifyBuilder {
         Identify::new_unchecked(inner.into())
     }
 }
+#[derive(Clone)]
+pub struct GcsFilterMessage(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for GcsFilterMessage {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl ::core::fmt::Debug for GcsFilterMessage {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl ::core::fmt::Display for GcsFilterMessage {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}(", Self::NAME)?;
+        self.to_enum().display_inner(f)?;
+        write!(f, ")")
+    }
+}
+impl ::core::default::Default for GcsFilterMessage {
+    fn default() -> Self {
+        let v: Vec<u8> = vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        GcsFilterMessage::new_unchecked(v.into())
+    }
+}
+impl GcsFilterMessage {
+    pub const ITEMS_COUNT: usize = 6;
+    pub fn item_id(&self) -> molecule::Number {
+        molecule::unpack_number(self.as_slice())
+    }
+    pub fn to_enum(&self) -> GcsFilterMessageUnion {
+        let inner = self.0.slice(molecule::NUMBER_SIZE..);
+        match self.item_id() {
+            0 => GetGcsFilters::new_unchecked(inner).into(),
+            1 => GcsFilter::new_unchecked(inner).into(),
+            2 => GetGcsFilterHashes::new_unchecked(inner).into(),
+            3 => GcsFilterHashes::new_unchecked(inner).into(),
+            4 => GetGcsFilterCheckPoint::new_unchecked(inner).into(),
+            5 => GcsFilterCheckPoint::new_unchecked(inner).into(),
+            _ => panic!("{}: invalid data", Self::NAME),
+        }
+    }
+    pub fn as_reader<'r>(&'r self) -> GcsFilterMessageReader<'r> {
+        GcsFilterMessageReader::new_unchecked(self.as_slice())
+    }
+}
+impl molecule::prelude::Entity for GcsFilterMessage {
+    type Builder = GcsFilterMessageBuilder;
+    const NAME: &'static str = "GcsFilterMessage";
+    fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
+        GcsFilterMessage(data)
+    }
+    fn as_bytes(&self) -> molecule::bytes::Bytes {
+        self.0.clone()
+    }
+    fn as_slice(&self) -> &[u8] {
+        &self.0[..]
+    }
+    fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GcsFilterMessageReader::from_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GcsFilterMessageReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn new_builder() -> Self::Builder {
+        ::core::default::Default::default()
+    }
+    fn as_builder(self) -> Self::Builder {
+        Self::new_builder().set(self.to_enum())
+    }
+}
+#[derive(Clone, Copy)]
+pub struct GcsFilterMessageReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for GcsFilterMessageReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl<'r> ::core::fmt::Debug for GcsFilterMessageReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl<'r> ::core::fmt::Display for GcsFilterMessageReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}(", Self::NAME)?;
+        self.to_enum().display_inner(f)?;
+        write!(f, ")")
+    }
+}
+impl<'r> GcsFilterMessageReader<'r> {
+    pub const ITEMS_COUNT: usize = 6;
+    pub fn item_id(&self) -> molecule::Number {
+        molecule::unpack_number(self.as_slice())
+    }
+    pub fn to_enum(&self) -> GcsFilterMessageUnionReader<'r> {
+        let inner = &self.as_slice()[molecule::NUMBER_SIZE..];
+        match self.item_id() {
+            0 => GetGcsFiltersReader::new_unchecked(inner).into(),
+            1 => GcsFilterReader::new_unchecked(inner).into(),
+            2 => GetGcsFilterHashesReader::new_unchecked(inner).into(),
+            3 => GcsFilterHashesReader::new_unchecked(inner).into(),
+            4 => GetGcsFilterCheckPointReader::new_unchecked(inner).into(),
+            5 => GcsFilterCheckPointReader::new_unchecked(inner).into(),
+            _ => panic!("{}: invalid data", Self::NAME),
+        }
+    }
+}
+impl<'r> molecule::prelude::Reader<'r> for GcsFilterMessageReader<'r> {
+    type Entity = GcsFilterMessage;
+    const NAME: &'static str = "GcsFilterMessageReader";
+    fn to_entity(&self) -> Self::Entity {
+        Self::Entity::new_unchecked(self.as_slice().to_owned().into())
+    }
+    fn new_unchecked(slice: &'r [u8]) -> Self {
+        GcsFilterMessageReader(slice)
+    }
+    fn as_slice(&self) -> &'r [u8] {
+        self.0
+    }
+    fn verify(slice: &[u8], compatible: bool) -> molecule::error::VerificationResult<()> {
+        use molecule::verification_error as ve;
+        let slice_len = slice.len();
+        if slice_len < molecule::NUMBER_SIZE {
+            return ve!(Self, HeaderIsBroken, molecule::NUMBER_SIZE, slice_len);
+        }
+        let item_id = molecule::unpack_number(slice);
+        let inner_slice = &slice[molecule::NUMBER_SIZE..];
+        match item_id {
+            0 => GetGcsFiltersReader::verify(inner_slice, compatible),
+            1 => GcsFilterReader::verify(inner_slice, compatible),
+            2 => GetGcsFilterHashesReader::verify(inner_slice, compatible),
+            3 => GcsFilterHashesReader::verify(inner_slice, compatible),
+            4 => GetGcsFilterCheckPointReader::verify(inner_slice, compatible),
+            5 => GcsFilterCheckPointReader::verify(inner_slice, compatible),
+            _ => ve!(Self, UnknownItem, Self::ITEMS_COUNT, item_id),
+        }?;
+        Ok(())
+    }
+}
+#[derive(Debug, Default)]
+pub struct GcsFilterMessageBuilder(pub(crate) GcsFilterMessageUnion);
+impl GcsFilterMessageBuilder {
+    pub const ITEMS_COUNT: usize = 6;
+    pub fn set<I>(mut self, v: I) -> Self
+    where
+        I: ::core::convert::Into<GcsFilterMessageUnion>,
+    {
+        self.0 = v.into();
+        self
+    }
+}
+impl molecule::prelude::Builder for GcsFilterMessageBuilder {
+    type Entity = GcsFilterMessage;
+    const NAME: &'static str = "GcsFilterMessageBuilder";
+    fn expected_length(&self) -> usize {
+        molecule::NUMBER_SIZE + self.0.as_slice().len()
+    }
+    fn write<W: ::molecule::io::Write>(&self, writer: &mut W) -> ::molecule::io::Result<()> {
+        writer.write_all(&molecule::pack_number(self.0.item_id()))?;
+        writer.write_all(self.0.as_slice())
+    }
+    fn build(&self) -> Self::Entity {
+        let mut inner = Vec::with_capacity(self.expected_length());
+        self.write(&mut inner)
+            .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
+        GcsFilterMessage::new_unchecked(inner.into())
+    }
+}
+#[derive(Debug, Clone)]
+pub enum GcsFilterMessageUnion {
+    GetGcsFilters(GetGcsFilters),
+    GcsFilter(GcsFilter),
+    GetGcsFilterHashes(GetGcsFilterHashes),
+    GcsFilterHashes(GcsFilterHashes),
+    GetGcsFilterCheckPoint(GetGcsFilterCheckPoint),
+    GcsFilterCheckPoint(GcsFilterCheckPoint),
+}
+#[derive(Debug, Clone, Copy)]
+pub enum GcsFilterMessageUnionReader<'r> {
+    GetGcsFilters(GetGcsFiltersReader<'r>),
+    GcsFilter(GcsFilterReader<'r>),
+    GetGcsFilterHashes(GetGcsFilterHashesReader<'r>),
+    GcsFilterHashes(GcsFilterHashesReader<'r>),
+    GetGcsFilterCheckPoint(GetGcsFilterCheckPointReader<'r>),
+    GcsFilterCheckPoint(GcsFilterCheckPointReader<'r>),
+}
+impl ::core::default::Default for GcsFilterMessageUnion {
+    fn default() -> Self {
+        GcsFilterMessageUnion::GetGcsFilters(::core::default::Default::default())
+    }
+}
+impl ::core::fmt::Display for GcsFilterMessageUnion {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        match self {
+            GcsFilterMessageUnion::GetGcsFilters(ref item) => {
+                write!(f, "{}::{}({})", Self::NAME, GetGcsFilters::NAME, item)
+            }
+            GcsFilterMessageUnion::GcsFilter(ref item) => {
+                write!(f, "{}::{}({})", Self::NAME, GcsFilter::NAME, item)
+            }
+            GcsFilterMessageUnion::GetGcsFilterHashes(ref item) => {
+                write!(f, "{}::{}({})", Self::NAME, GetGcsFilterHashes::NAME, item)
+            }
+            GcsFilterMessageUnion::GcsFilterHashes(ref item) => {
+                write!(f, "{}::{}({})", Self::NAME, GcsFilterHashes::NAME, item)
+            }
+            GcsFilterMessageUnion::GetGcsFilterCheckPoint(ref item) => write!(
+                f,
+                "{}::{}({})",
+                Self::NAME,
+                GetGcsFilterCheckPoint::NAME,
+                item
+            ),
+            GcsFilterMessageUnion::GcsFilterCheckPoint(ref item) => {
+                write!(f, "{}::{}({})", Self::NAME, GcsFilterCheckPoint::NAME, item)
+            }
+        }
+    }
+}
+impl<'r> ::core::fmt::Display for GcsFilterMessageUnionReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        match self {
+            GcsFilterMessageUnionReader::GetGcsFilters(ref item) => {
+                write!(f, "{}::{}({})", Self::NAME, GetGcsFilters::NAME, item)
+            }
+            GcsFilterMessageUnionReader::GcsFilter(ref item) => {
+                write!(f, "{}::{}({})", Self::NAME, GcsFilter::NAME, item)
+            }
+            GcsFilterMessageUnionReader::GetGcsFilterHashes(ref item) => {
+                write!(f, "{}::{}({})", Self::NAME, GetGcsFilterHashes::NAME, item)
+            }
+            GcsFilterMessageUnionReader::GcsFilterHashes(ref item) => {
+                write!(f, "{}::{}({})", Self::NAME, GcsFilterHashes::NAME, item)
+            }
+            GcsFilterMessageUnionReader::GetGcsFilterCheckPoint(ref item) => write!(
+                f,
+                "{}::{}({})",
+                Self::NAME,
+                GetGcsFilterCheckPoint::NAME,
+                item
+            ),
+            GcsFilterMessageUnionReader::GcsFilterCheckPoint(ref item) => {
+                write!(f, "{}::{}({})", Self::NAME, GcsFilterCheckPoint::NAME, item)
+            }
+        }
+    }
+}
+impl GcsFilterMessageUnion {
+    pub(crate) fn display_inner(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        match self {
+            GcsFilterMessageUnion::GetGcsFilters(ref item) => write!(f, "{}", item),
+            GcsFilterMessageUnion::GcsFilter(ref item) => write!(f, "{}", item),
+            GcsFilterMessageUnion::GetGcsFilterHashes(ref item) => write!(f, "{}", item),
+            GcsFilterMessageUnion::GcsFilterHashes(ref item) => write!(f, "{}", item),
+            GcsFilterMessageUnion::GetGcsFilterCheckPoint(ref item) => write!(f, "{}", item),
+            GcsFilterMessageUnion::GcsFilterCheckPoint(ref item) => write!(f, "{}", item),
+        }
+    }
+}
+impl<'r> GcsFilterMessageUnionReader<'r> {
+    pub(crate) fn display_inner(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        match self {
+            GcsFilterMessageUnionReader::GetGcsFilters(ref item) => write!(f, "{}", item),
+            GcsFilterMessageUnionReader::GcsFilter(ref item) => write!(f, "{}", item),
+            GcsFilterMessageUnionReader::GetGcsFilterHashes(ref item) => write!(f, "{}", item),
+            GcsFilterMessageUnionReader::GcsFilterHashes(ref item) => write!(f, "{}", item),
+            GcsFilterMessageUnionReader::GetGcsFilterCheckPoint(ref item) => write!(f, "{}", item),
+            GcsFilterMessageUnionReader::GcsFilterCheckPoint(ref item) => write!(f, "{}", item),
+        }
+    }
+}
+impl ::core::convert::From<GetGcsFilters> for GcsFilterMessageUnion {
+    fn from(item: GetGcsFilters) -> Self {
+        GcsFilterMessageUnion::GetGcsFilters(item)
+    }
+}
+impl ::core::convert::From<GcsFilter> for GcsFilterMessageUnion {
+    fn from(item: GcsFilter) -> Self {
+        GcsFilterMessageUnion::GcsFilter(item)
+    }
+}
+impl ::core::convert::From<GetGcsFilterHashes> for GcsFilterMessageUnion {
+    fn from(item: GetGcsFilterHashes) -> Self {
+        GcsFilterMessageUnion::GetGcsFilterHashes(item)
+    }
+}
+impl ::core::convert::From<GcsFilterHashes> for GcsFilterMessageUnion {
+    fn from(item: GcsFilterHashes) -> Self {
+        GcsFilterMessageUnion::GcsFilterHashes(item)
+    }
+}
+impl ::core::convert::From<GetGcsFilterCheckPoint> for GcsFilterMessageUnion {
+    fn from(item: GetGcsFilterCheckPoint) -> Self {
+        GcsFilterMessageUnion::GetGcsFilterCheckPoint(item)
+    }
+}
+impl ::core::convert::From<GcsFilterCheckPoint> for GcsFilterMessageUnion {
+    fn from(item: GcsFilterCheckPoint) -> Self {
+        GcsFilterMessageUnion::GcsFilterCheckPoint(item)
+    }
+}
+impl<'r> ::core::convert::From<GetGcsFiltersReader<'r>> for GcsFilterMessageUnionReader<'r> {
+    fn from(item: GetGcsFiltersReader<'r>) -> Self {
+        GcsFilterMessageUnionReader::GetGcsFilters(item)
+    }
+}
+impl<'r> ::core::convert::From<GcsFilterReader<'r>> for GcsFilterMessageUnionReader<'r> {
+    fn from(item: GcsFilterReader<'r>) -> Self {
+        GcsFilterMessageUnionReader::GcsFilter(item)
+    }
+}
+impl<'r> ::core::convert::From<GetGcsFilterHashesReader<'r>> for GcsFilterMessageUnionReader<'r> {
+    fn from(item: GetGcsFilterHashesReader<'r>) -> Self {
+        GcsFilterMessageUnionReader::GetGcsFilterHashes(item)
+    }
+}
+impl<'r> ::core::convert::From<GcsFilterHashesReader<'r>> for GcsFilterMessageUnionReader<'r> {
+    fn from(item: GcsFilterHashesReader<'r>) -> Self {
+        GcsFilterMessageUnionReader::GcsFilterHashes(item)
+    }
+}
+impl<'r> ::core::convert::From<GetGcsFilterCheckPointReader<'r>>
+    for GcsFilterMessageUnionReader<'r>
+{
+    fn from(item: GetGcsFilterCheckPointReader<'r>) -> Self {
+        GcsFilterMessageUnionReader::GetGcsFilterCheckPoint(item)
+    }
+}
+impl<'r> ::core::convert::From<GcsFilterCheckPointReader<'r>> for GcsFilterMessageUnionReader<'r> {
+    fn from(item: GcsFilterCheckPointReader<'r>) -> Self {
+        GcsFilterMessageUnionReader::GcsFilterCheckPoint(item)
+    }
+}
+impl GcsFilterMessageUnion {
+    pub const NAME: &'static str = "GcsFilterMessageUnion";
+    pub fn as_bytes(&self) -> molecule::bytes::Bytes {
+        match self {
+            GcsFilterMessageUnion::GetGcsFilters(item) => item.as_bytes(),
+            GcsFilterMessageUnion::GcsFilter(item) => item.as_bytes(),
+            GcsFilterMessageUnion::GetGcsFilterHashes(item) => item.as_bytes(),
+            GcsFilterMessageUnion::GcsFilterHashes(item) => item.as_bytes(),
+            GcsFilterMessageUnion::GetGcsFilterCheckPoint(item) => item.as_bytes(),
+            GcsFilterMessageUnion::GcsFilterCheckPoint(item) => item.as_bytes(),
+        }
+    }
+    pub fn as_slice(&self) -> &[u8] {
+        match self {
+            GcsFilterMessageUnion::GetGcsFilters(item) => item.as_slice(),
+            GcsFilterMessageUnion::GcsFilter(item) => item.as_slice(),
+            GcsFilterMessageUnion::GetGcsFilterHashes(item) => item.as_slice(),
+            GcsFilterMessageUnion::GcsFilterHashes(item) => item.as_slice(),
+            GcsFilterMessageUnion::GetGcsFilterCheckPoint(item) => item.as_slice(),
+            GcsFilterMessageUnion::GcsFilterCheckPoint(item) => item.as_slice(),
+        }
+    }
+    pub fn item_id(&self) -> molecule::Number {
+        match self {
+            GcsFilterMessageUnion::GetGcsFilters(_) => 0,
+            GcsFilterMessageUnion::GcsFilter(_) => 1,
+            GcsFilterMessageUnion::GetGcsFilterHashes(_) => 2,
+            GcsFilterMessageUnion::GcsFilterHashes(_) => 3,
+            GcsFilterMessageUnion::GetGcsFilterCheckPoint(_) => 4,
+            GcsFilterMessageUnion::GcsFilterCheckPoint(_) => 5,
+        }
+    }
+    pub fn item_name(&self) -> &str {
+        match self {
+            GcsFilterMessageUnion::GetGcsFilters(_) => "GetGcsFilters",
+            GcsFilterMessageUnion::GcsFilter(_) => "GcsFilter",
+            GcsFilterMessageUnion::GetGcsFilterHashes(_) => "GetGcsFilterHashes",
+            GcsFilterMessageUnion::GcsFilterHashes(_) => "GcsFilterHashes",
+            GcsFilterMessageUnion::GetGcsFilterCheckPoint(_) => "GetGcsFilterCheckPoint",
+            GcsFilterMessageUnion::GcsFilterCheckPoint(_) => "GcsFilterCheckPoint",
+        }
+    }
+    pub fn as_reader<'r>(&'r self) -> GcsFilterMessageUnionReader<'r> {
+        match self {
+            GcsFilterMessageUnion::GetGcsFilters(item) => item.as_reader().into(),
+            GcsFilterMessageUnion::GcsFilter(item) => item.as_reader().into(),
+            GcsFilterMessageUnion::GetGcsFilterHashes(item) => item.as_reader().into(),
+            GcsFilterMessageUnion::GcsFilterHashes(item) => item.as_reader().into(),
+            GcsFilterMessageUnion::GetGcsFilterCheckPoint(item) => item.as_reader().into(),
+            GcsFilterMessageUnion::GcsFilterCheckPoint(item) => item.as_reader().into(),
+        }
+    }
+}
+impl<'r> GcsFilterMessageUnionReader<'r> {
+    pub const NAME: &'r str = "GcsFilterMessageUnionReader";
+    pub fn as_slice(&self) -> &'r [u8] {
+        match self {
+            GcsFilterMessageUnionReader::GetGcsFilters(item) => item.as_slice(),
+            GcsFilterMessageUnionReader::GcsFilter(item) => item.as_slice(),
+            GcsFilterMessageUnionReader::GetGcsFilterHashes(item) => item.as_slice(),
+            GcsFilterMessageUnionReader::GcsFilterHashes(item) => item.as_slice(),
+            GcsFilterMessageUnionReader::GetGcsFilterCheckPoint(item) => item.as_slice(),
+            GcsFilterMessageUnionReader::GcsFilterCheckPoint(item) => item.as_slice(),
+        }
+    }
+    pub fn item_id(&self) -> molecule::Number {
+        match self {
+            GcsFilterMessageUnionReader::GetGcsFilters(_) => 0,
+            GcsFilterMessageUnionReader::GcsFilter(_) => 1,
+            GcsFilterMessageUnionReader::GetGcsFilterHashes(_) => 2,
+            GcsFilterMessageUnionReader::GcsFilterHashes(_) => 3,
+            GcsFilterMessageUnionReader::GetGcsFilterCheckPoint(_) => 4,
+            GcsFilterMessageUnionReader::GcsFilterCheckPoint(_) => 5,
+        }
+    }
+    pub fn item_name(&self) -> &str {
+        match self {
+            GcsFilterMessageUnionReader::GetGcsFilters(_) => "GetGcsFilters",
+            GcsFilterMessageUnionReader::GcsFilter(_) => "GcsFilter",
+            GcsFilterMessageUnionReader::GetGcsFilterHashes(_) => "GetGcsFilterHashes",
+            GcsFilterMessageUnionReader::GcsFilterHashes(_) => "GcsFilterHashes",
+            GcsFilterMessageUnionReader::GetGcsFilterCheckPoint(_) => "GetGcsFilterCheckPoint",
+            GcsFilterMessageUnionReader::GcsFilterCheckPoint(_) => "GcsFilterCheckPoint",
+        }
+    }
+}
+#[derive(Clone)]
+pub struct GetGcsFilters(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for GetGcsFilters {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl ::core::fmt::Debug for GetGcsFilters {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl ::core::fmt::Display for GetGcsFilters {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "start_number", self.start_number())?;
+        write!(f, ", {}: {}", "stop_hash", self.stop_hash())?;
+        write!(f, " }}")
+    }
+}
+impl ::core::default::Default for GetGcsFilters {
+    fn default() -> Self {
+        let v: Vec<u8> = vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        GetGcsFilters::new_unchecked(v.into())
+    }
+}
+impl GetGcsFilters {
+    pub const TOTAL_SIZE: usize = 40;
+    pub const FIELD_SIZES: [usize; 2] = [8, 32];
+    pub const FIELD_COUNT: usize = 2;
+    pub fn start_number(&self) -> Uint64 {
+        Uint64::new_unchecked(self.0.slice(0..8))
+    }
+    pub fn stop_hash(&self) -> Byte32 {
+        Byte32::new_unchecked(self.0.slice(8..40))
+    }
+    pub fn as_reader<'r>(&'r self) -> GetGcsFiltersReader<'r> {
+        GetGcsFiltersReader::new_unchecked(self.as_slice())
+    }
+}
+impl molecule::prelude::Entity for GetGcsFilters {
+    type Builder = GetGcsFiltersBuilder;
+    const NAME: &'static str = "GetGcsFilters";
+    fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
+        GetGcsFilters(data)
+    }
+    fn as_bytes(&self) -> molecule::bytes::Bytes {
+        self.0.clone()
+    }
+    fn as_slice(&self) -> &[u8] {
+        &self.0[..]
+    }
+    fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GetGcsFiltersReader::from_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GetGcsFiltersReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn new_builder() -> Self::Builder {
+        ::core::default::Default::default()
+    }
+    fn as_builder(self) -> Self::Builder {
+        Self::new_builder()
+            .start_number(self.start_number())
+            .stop_hash(self.stop_hash())
+    }
+}
+#[derive(Clone, Copy)]
+pub struct GetGcsFiltersReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for GetGcsFiltersReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl<'r> ::core::fmt::Debug for GetGcsFiltersReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl<'r> ::core::fmt::Display for GetGcsFiltersReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "start_number", self.start_number())?;
+        write!(f, ", {}: {}", "stop_hash", self.stop_hash())?;
+        write!(f, " }}")
+    }
+}
+impl<'r> GetGcsFiltersReader<'r> {
+    pub const TOTAL_SIZE: usize = 40;
+    pub const FIELD_SIZES: [usize; 2] = [8, 32];
+    pub const FIELD_COUNT: usize = 2;
+    pub fn start_number(&self) -> Uint64Reader<'r> {
+        Uint64Reader::new_unchecked(&self.as_slice()[0..8])
+    }
+    pub fn stop_hash(&self) -> Byte32Reader<'r> {
+        Byte32Reader::new_unchecked(&self.as_slice()[8..40])
+    }
+}
+impl<'r> molecule::prelude::Reader<'r> for GetGcsFiltersReader<'r> {
+    type Entity = GetGcsFilters;
+    const NAME: &'static str = "GetGcsFiltersReader";
+    fn to_entity(&self) -> Self::Entity {
+        Self::Entity::new_unchecked(self.as_slice().to_owned().into())
+    }
+    fn new_unchecked(slice: &'r [u8]) -> Self {
+        GetGcsFiltersReader(slice)
+    }
+    fn as_slice(&self) -> &'r [u8] {
+        self.0
+    }
+    fn verify(slice: &[u8], _compatible: bool) -> molecule::error::VerificationResult<()> {
+        use molecule::verification_error as ve;
+        let slice_len = slice.len();
+        if slice_len != Self::TOTAL_SIZE {
+            return ve!(Self, TotalSizeNotMatch, Self::TOTAL_SIZE, slice_len);
+        }
+        Ok(())
+    }
+}
+#[derive(Debug, Default)]
+pub struct GetGcsFiltersBuilder {
+    pub(crate) start_number: Uint64,
+    pub(crate) stop_hash: Byte32,
+}
+impl GetGcsFiltersBuilder {
+    pub const TOTAL_SIZE: usize = 40;
+    pub const FIELD_SIZES: [usize; 2] = [8, 32];
+    pub const FIELD_COUNT: usize = 2;
+    pub fn start_number(mut self, v: Uint64) -> Self {
+        self.start_number = v;
+        self
+    }
+    pub fn stop_hash(mut self, v: Byte32) -> Self {
+        self.stop_hash = v;
+        self
+    }
+}
+impl molecule::prelude::Builder for GetGcsFiltersBuilder {
+    type Entity = GetGcsFilters;
+    const NAME: &'static str = "GetGcsFiltersBuilder";
+    fn expected_length(&self) -> usize {
+        Self::TOTAL_SIZE
+    }
+    fn write<W: ::molecule::io::Write>(&self, writer: &mut W) -> ::molecule::io::Result<()> {
+        writer.write_all(self.start_number.as_slice())?;
+        writer.write_all(self.stop_hash.as_slice())?;
+        Ok(())
+    }
+    fn build(&self) -> Self::Entity {
+        let mut inner = Vec::with_capacity(self.expected_length());
+        self.write(&mut inner)
+            .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
+        GetGcsFilters::new_unchecked(inner.into())
+    }
+}
+#[derive(Clone)]
+pub struct GcsFilter(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for GcsFilter {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl ::core::fmt::Debug for GcsFilter {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl ::core::fmt::Display for GcsFilter {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "block_hash", self.block_hash())?;
+        write!(f, ", {}: {}", "filter", self.filter())?;
+        let extra_count = self.count_extra_fields();
+        if extra_count != 0 {
+            write!(f, ", .. ({} fields)", extra_count)?;
+        }
+        write!(f, " }}")
+    }
+}
+impl ::core::default::Default for GcsFilter {
+    fn default() -> Self {
+        let v: Vec<u8> = vec![
+            48, 0, 0, 0, 12, 0, 0, 0, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        GcsFilter::new_unchecked(v.into())
+    }
+}
+impl GcsFilter {
+    pub const FIELD_COUNT: usize = 2;
+    pub fn total_size(&self) -> usize {
+        molecule::unpack_number(self.as_slice()) as usize
+    }
+    pub fn field_count(&self) -> usize {
+        if self.total_size() == molecule::NUMBER_SIZE {
+            0
+        } else {
+            (molecule::unpack_number(&self.as_slice()[molecule::NUMBER_SIZE..]) as usize / 4) - 1
+        }
+    }
+    pub fn count_extra_fields(&self) -> usize {
+        self.field_count() - Self::FIELD_COUNT
+    }
+    pub fn has_extra_fields(&self) -> bool {
+        Self::FIELD_COUNT != self.field_count()
+    }
+    pub fn block_hash(&self) -> Byte32 {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[4..]) as usize;
+        let end = molecule::unpack_number(&slice[8..]) as usize;
+        Byte32::new_unchecked(self.0.slice(start..end))
+    }
+    pub fn filter(&self) -> Bytes {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[8..]) as usize;
+        if self.has_extra_fields() {
+            let end = molecule::unpack_number(&slice[12..]) as usize;
+            Bytes::new_unchecked(self.0.slice(start..end))
+        } else {
+            Bytes::new_unchecked(self.0.slice(start..))
+        }
+    }
+    pub fn as_reader<'r>(&'r self) -> GcsFilterReader<'r> {
+        GcsFilterReader::new_unchecked(self.as_slice())
+    }
+}
+impl molecule::prelude::Entity for GcsFilter {
+    type Builder = GcsFilterBuilder;
+    const NAME: &'static str = "GcsFilter";
+    fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
+        GcsFilter(data)
+    }
+    fn as_bytes(&self) -> molecule::bytes::Bytes {
+        self.0.clone()
+    }
+    fn as_slice(&self) -> &[u8] {
+        &self.0[..]
+    }
+    fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GcsFilterReader::from_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GcsFilterReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn new_builder() -> Self::Builder {
+        ::core::default::Default::default()
+    }
+    fn as_builder(self) -> Self::Builder {
+        Self::new_builder()
+            .block_hash(self.block_hash())
+            .filter(self.filter())
+    }
+}
+#[derive(Clone, Copy)]
+pub struct GcsFilterReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for GcsFilterReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl<'r> ::core::fmt::Debug for GcsFilterReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl<'r> ::core::fmt::Display for GcsFilterReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "block_hash", self.block_hash())?;
+        write!(f, ", {}: {}", "filter", self.filter())?;
+        let extra_count = self.count_extra_fields();
+        if extra_count != 0 {
+            write!(f, ", .. ({} fields)", extra_count)?;
+        }
+        write!(f, " }}")
+    }
+}
+impl<'r> GcsFilterReader<'r> {
+    pub const FIELD_COUNT: usize = 2;
+    pub fn total_size(&self) -> usize {
+        molecule::unpack_number(self.as_slice()) as usize
+    }
+    pub fn field_count(&self) -> usize {
+        if self.total_size() == molecule::NUMBER_SIZE {
+            0
+        } else {
+            (molecule::unpack_number(&self.as_slice()[molecule::NUMBER_SIZE..]) as usize / 4) - 1
+        }
+    }
+    pub fn count_extra_fields(&self) -> usize {
+        self.field_count() - Self::FIELD_COUNT
+    }
+    pub fn has_extra_fields(&self) -> bool {
+        Self::FIELD_COUNT != self.field_count()
+    }
+    pub fn block_hash(&self) -> Byte32Reader<'r> {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[4..]) as usize;
+        let end = molecule::unpack_number(&slice[8..]) as usize;
+        Byte32Reader::new_unchecked(&self.as_slice()[start..end])
+    }
+    pub fn filter(&self) -> BytesReader<'r> {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[8..]) as usize;
+        if self.has_extra_fields() {
+            let end = molecule::unpack_number(&slice[12..]) as usize;
+            BytesReader::new_unchecked(&self.as_slice()[start..end])
+        } else {
+            BytesReader::new_unchecked(&self.as_slice()[start..])
+        }
+    }
+}
+impl<'r> molecule::prelude::Reader<'r> for GcsFilterReader<'r> {
+    type Entity = GcsFilter;
+    const NAME: &'static str = "GcsFilterReader";
+    fn to_entity(&self) -> Self::Entity {
+        Self::Entity::new_unchecked(self.as_slice().to_owned().into())
+    }
+    fn new_unchecked(slice: &'r [u8]) -> Self {
+        GcsFilterReader(slice)
+    }
+    fn as_slice(&self) -> &'r [u8] {
+        self.0
+    }
+    fn verify(slice: &[u8], compatible: bool) -> molecule::error::VerificationResult<()> {
+        use molecule::verification_error as ve;
+        let slice_len = slice.len();
+        if slice_len < molecule::NUMBER_SIZE {
+            return ve!(Self, HeaderIsBroken, molecule::NUMBER_SIZE, slice_len);
+        }
+        let total_size = molecule::unpack_number(slice) as usize;
+        if slice_len != total_size {
+            return ve!(Self, TotalSizeNotMatch, total_size, slice_len);
+        }
+        if slice_len == molecule::NUMBER_SIZE && Self::FIELD_COUNT == 0 {
+            return Ok(());
+        }
+        if slice_len < molecule::NUMBER_SIZE * 2 {
+            return ve!(Self, HeaderIsBroken, molecule::NUMBER_SIZE * 2, slice_len);
+        }
+        let offset_first = molecule::unpack_number(&slice[molecule::NUMBER_SIZE..]) as usize;
+        if offset_first % 4 != 0 || offset_first < molecule::NUMBER_SIZE * 2 {
+            return ve!(Self, OffsetsNotMatch);
+        }
+        let field_count = offset_first / 4 - 1;
+        if field_count < Self::FIELD_COUNT {
+            return ve!(Self, FieldCountNotMatch, Self::FIELD_COUNT, field_count);
+        } else if !compatible && field_count > Self::FIELD_COUNT {
+            return ve!(Self, FieldCountNotMatch, Self::FIELD_COUNT, field_count);
+        };
+        let header_size = molecule::NUMBER_SIZE * (field_count + 1);
+        if slice_len < header_size {
+            return ve!(Self, HeaderIsBroken, header_size, slice_len);
+        }
+        let mut offsets: Vec<usize> = slice[molecule::NUMBER_SIZE..]
+            .chunks(molecule::NUMBER_SIZE)
+            .take(field_count)
+            .map(|x| molecule::unpack_number(x) as usize)
+            .collect();
+        offsets.push(total_size);
+        if offsets.windows(2).any(|i| i[0] > i[1]) {
+            return ve!(Self, OffsetsNotMatch);
+        }
+        Byte32Reader::verify(&slice[offsets[0]..offsets[1]], compatible)?;
+        BytesReader::verify(&slice[offsets[1]..offsets[2]], compatible)?;
+        Ok(())
+    }
+}
+#[derive(Debug, Default)]
+pub struct GcsFilterBuilder {
+    pub(crate) block_hash: Byte32,
+    pub(crate) filter: Bytes,
+}
+impl GcsFilterBuilder {
+    pub const FIELD_COUNT: usize = 2;
+    pub fn block_hash(mut self, v: Byte32) -> Self {
+        self.block_hash = v;
+        self
+    }
+    pub fn filter(mut self, v: Bytes) -> Self {
+        self.filter = v;
+        self
+    }
+}
+impl molecule::prelude::Builder for GcsFilterBuilder {
+    type Entity = GcsFilter;
+    const NAME: &'static str = "GcsFilterBuilder";
+    fn expected_length(&self) -> usize {
+        molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1)
+            + self.block_hash.as_slice().len()
+            + self.filter.as_slice().len()
+    }
+    fn write<W: ::molecule::io::Write>(&self, writer: &mut W) -> ::molecule::io::Result<()> {
+        let mut total_size = molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1);
+        let mut offsets = Vec::with_capacity(Self::FIELD_COUNT);
+        offsets.push(total_size);
+        total_size += self.block_hash.as_slice().len();
+        offsets.push(total_size);
+        total_size += self.filter.as_slice().len();
+        writer.write_all(&molecule::pack_number(total_size as molecule::Number))?;
+        for offset in offsets.into_iter() {
+            writer.write_all(&molecule::pack_number(offset as molecule::Number))?;
+        }
+        writer.write_all(self.block_hash.as_slice())?;
+        writer.write_all(self.filter.as_slice())?;
+        Ok(())
+    }
+    fn build(&self) -> Self::Entity {
+        let mut inner = Vec::with_capacity(self.expected_length());
+        self.write(&mut inner)
+            .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
+        GcsFilter::new_unchecked(inner.into())
+    }
+}
+#[derive(Clone)]
+pub struct GetGcsFilterHashes(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for GetGcsFilterHashes {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl ::core::fmt::Debug for GetGcsFilterHashes {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl ::core::fmt::Display for GetGcsFilterHashes {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "start_number", self.start_number())?;
+        write!(f, ", {}: {}", "stop_hash", self.stop_hash())?;
+        write!(f, " }}")
+    }
+}
+impl ::core::default::Default for GetGcsFilterHashes {
+    fn default() -> Self {
+        let v: Vec<u8> = vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        GetGcsFilterHashes::new_unchecked(v.into())
+    }
+}
+impl GetGcsFilterHashes {
+    pub const TOTAL_SIZE: usize = 40;
+    pub const FIELD_SIZES: [usize; 2] = [8, 32];
+    pub const FIELD_COUNT: usize = 2;
+    pub fn start_number(&self) -> Uint64 {
+        Uint64::new_unchecked(self.0.slice(0..8))
+    }
+    pub fn stop_hash(&self) -> Byte32 {
+        Byte32::new_unchecked(self.0.slice(8..40))
+    }
+    pub fn as_reader<'r>(&'r self) -> GetGcsFilterHashesReader<'r> {
+        GetGcsFilterHashesReader::new_unchecked(self.as_slice())
+    }
+}
+impl molecule::prelude::Entity for GetGcsFilterHashes {
+    type Builder = GetGcsFilterHashesBuilder;
+    const NAME: &'static str = "GetGcsFilterHashes";
+    fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
+        GetGcsFilterHashes(data)
+    }
+    fn as_bytes(&self) -> molecule::bytes::Bytes {
+        self.0.clone()
+    }
+    fn as_slice(&self) -> &[u8] {
+        &self.0[..]
+    }
+    fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GetGcsFilterHashesReader::from_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GetGcsFilterHashesReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn new_builder() -> Self::Builder {
+        ::core::default::Default::default()
+    }
+    fn as_builder(self) -> Self::Builder {
+        Self::new_builder()
+            .start_number(self.start_number())
+            .stop_hash(self.stop_hash())
+    }
+}
+#[derive(Clone, Copy)]
+pub struct GetGcsFilterHashesReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for GetGcsFilterHashesReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl<'r> ::core::fmt::Debug for GetGcsFilterHashesReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl<'r> ::core::fmt::Display for GetGcsFilterHashesReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "start_number", self.start_number())?;
+        write!(f, ", {}: {}", "stop_hash", self.stop_hash())?;
+        write!(f, " }}")
+    }
+}
+impl<'r> GetGcsFilterHashesReader<'r> {
+    pub const TOTAL_SIZE: usize = 40;
+    pub const FIELD_SIZES: [usize; 2] = [8, 32];
+    pub const FIELD_COUNT: usize = 2;
+    pub fn start_number(&self) -> Uint64Reader<'r> {
+        Uint64Reader::new_unchecked(&self.as_slice()[0..8])
+    }
+    pub fn stop_hash(&self) -> Byte32Reader<'r> {
+        Byte32Reader::new_unchecked(&self.as_slice()[8..40])
+    }
+}
+impl<'r> molecule::prelude::Reader<'r> for GetGcsFilterHashesReader<'r> {
+    type Entity = GetGcsFilterHashes;
+    const NAME: &'static str = "GetGcsFilterHashesReader";
+    fn to_entity(&self) -> Self::Entity {
+        Self::Entity::new_unchecked(self.as_slice().to_owned().into())
+    }
+    fn new_unchecked(slice: &'r [u8]) -> Self {
+        GetGcsFilterHashesReader(slice)
+    }
+    fn as_slice(&self) -> &'r [u8] {
+        self.0
+    }
+    fn verify(slice: &[u8], _compatible: bool) -> molecule::error::VerificationResult<()> {
+        use molecule::verification_error as ve;
+        let slice_len = slice.len();
+        if slice_len != Self::TOTAL_SIZE {
+            return ve!(Self, TotalSizeNotMatch, Self::TOTAL_SIZE, slice_len);
+        }
+        Ok(())
+    }
+}
+#[derive(Debug, Default)]
+pub struct GetGcsFilterHashesBuilder {
+    pub(crate) start_number: Uint64,
+    pub(crate) stop_hash: Byte32,
+}
+impl GetGcsFilterHashesBuilder {
+    pub const TOTAL_SIZE: usize = 40;
+    pub const FIELD_SIZES: [usize; 2] = [8, 32];
+    pub const FIELD_COUNT: usize = 2;
+    pub fn start_number(mut self, v: Uint64) -> Self {
+        self.start_number = v;
+        self
+    }
+    pub fn stop_hash(mut self, v: Byte32) -> Self {
+        self.stop_hash = v;
+        self
+    }
+}
+impl molecule::prelude::Builder for GetGcsFilterHashesBuilder {
+    type Entity = GetGcsFilterHashes;
+    const NAME: &'static str = "GetGcsFilterHashesBuilder";
+    fn expected_length(&self) -> usize {
+        Self::TOTAL_SIZE
+    }
+    fn write<W: ::molecule::io::Write>(&self, writer: &mut W) -> ::molecule::io::Result<()> {
+        writer.write_all(self.start_number.as_slice())?;
+        writer.write_all(self.stop_hash.as_slice())?;
+        Ok(())
+    }
+    fn build(&self) -> Self::Entity {
+        let mut inner = Vec::with_capacity(self.expected_length());
+        self.write(&mut inner)
+            .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
+        GetGcsFilterHashes::new_unchecked(inner.into())
+    }
+}
+#[derive(Clone)]
+pub struct GcsFilterHashes(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for GcsFilterHashes {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl ::core::fmt::Debug for GcsFilterHashes {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl ::core::fmt::Display for GcsFilterHashes {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "stop_hash", self.stop_hash())?;
+        write!(f, ", {}: {}", "parent_hash", self.parent_hash())?;
+        write!(f, ", {}: {}", "filter_hashes", self.filter_hashes())?;
+        let extra_count = self.count_extra_fields();
+        if extra_count != 0 {
+            write!(f, ", .. ({} fields)", extra_count)?;
+        }
+        write!(f, " }}")
+    }
+}
+impl ::core::default::Default for GcsFilterHashes {
+    fn default() -> Self {
+        let v: Vec<u8> = vec![
+            84, 0, 0, 0, 16, 0, 0, 0, 48, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        GcsFilterHashes::new_unchecked(v.into())
+    }
+}
+impl GcsFilterHashes {
+    pub const FIELD_COUNT: usize = 3;
+    pub fn total_size(&self) -> usize {
+        molecule::unpack_number(self.as_slice()) as usize
+    }
+    pub fn field_count(&self) -> usize {
+        if self.total_size() == molecule::NUMBER_SIZE {
+            0
+        } else {
+            (molecule::unpack_number(&self.as_slice()[molecule::NUMBER_SIZE..]) as usize / 4) - 1
+        }
+    }
+    pub fn count_extra_fields(&self) -> usize {
+        self.field_count() - Self::FIELD_COUNT
+    }
+    pub fn has_extra_fields(&self) -> bool {
+        Self::FIELD_COUNT != self.field_count()
+    }
+    pub fn stop_hash(&self) -> Byte32 {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[4..]) as usize;
+        let end = molecule::unpack_number(&slice[8..]) as usize;
+        Byte32::new_unchecked(self.0.slice(start..end))
+    }
+    pub fn parent_hash(&self) -> Byte32 {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[8..]) as usize;
+        let end = molecule::unpack_number(&slice[12..]) as usize;
+        Byte32::new_unchecked(self.0.slice(start..end))
+    }
+    pub fn filter_hashes(&self) -> Byte32Vec {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[12..]) as usize;
+        if self.has_extra_fields() {
+            let end = molecule::unpack_number(&slice[16..]) as usize;
+            Byte32Vec::new_unchecked(self.0.slice(start..end))
+        } else {
+            Byte32Vec::new_unchecked(self.0.slice(start..))
+        }
+    }
+    pub fn as_reader<'r>(&'r self) -> GcsFilterHashesReader<'r> {
+        GcsFilterHashesReader::new_unchecked(self.as_slice())
+    }
+}
+impl molecule::prelude::Entity for GcsFilterHashes {
+    type Builder = GcsFilterHashesBuilder;
+    const NAME: &'static str = "GcsFilterHashes";
+    fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
+        GcsFilterHashes(data)
+    }
+    fn as_bytes(&self) -> molecule::bytes::Bytes {
+        self.0.clone()
+    }
+    fn as_slice(&self) -> &[u8] {
+        &self.0[..]
+    }
+    fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GcsFilterHashesReader::from_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GcsFilterHashesReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn new_builder() -> Self::Builder {
+        ::core::default::Default::default()
+    }
+    fn as_builder(self) -> Self::Builder {
+        Self::new_builder()
+            .stop_hash(self.stop_hash())
+            .parent_hash(self.parent_hash())
+            .filter_hashes(self.filter_hashes())
+    }
+}
+#[derive(Clone, Copy)]
+pub struct GcsFilterHashesReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for GcsFilterHashesReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl<'r> ::core::fmt::Debug for GcsFilterHashesReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl<'r> ::core::fmt::Display for GcsFilterHashesReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "stop_hash", self.stop_hash())?;
+        write!(f, ", {}: {}", "parent_hash", self.parent_hash())?;
+        write!(f, ", {}: {}", "filter_hashes", self.filter_hashes())?;
+        let extra_count = self.count_extra_fields();
+        if extra_count != 0 {
+            write!(f, ", .. ({} fields)", extra_count)?;
+        }
+        write!(f, " }}")
+    }
+}
+impl<'r> GcsFilterHashesReader<'r> {
+    pub const FIELD_COUNT: usize = 3;
+    pub fn total_size(&self) -> usize {
+        molecule::unpack_number(self.as_slice()) as usize
+    }
+    pub fn field_count(&self) -> usize {
+        if self.total_size() == molecule::NUMBER_SIZE {
+            0
+        } else {
+            (molecule::unpack_number(&self.as_slice()[molecule::NUMBER_SIZE..]) as usize / 4) - 1
+        }
+    }
+    pub fn count_extra_fields(&self) -> usize {
+        self.field_count() - Self::FIELD_COUNT
+    }
+    pub fn has_extra_fields(&self) -> bool {
+        Self::FIELD_COUNT != self.field_count()
+    }
+    pub fn stop_hash(&self) -> Byte32Reader<'r> {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[4..]) as usize;
+        let end = molecule::unpack_number(&slice[8..]) as usize;
+        Byte32Reader::new_unchecked(&self.as_slice()[start..end])
+    }
+    pub fn parent_hash(&self) -> Byte32Reader<'r> {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[8..]) as usize;
+        let end = molecule::unpack_number(&slice[12..]) as usize;
+        Byte32Reader::new_unchecked(&self.as_slice()[start..end])
+    }
+    pub fn filter_hashes(&self) -> Byte32VecReader<'r> {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[12..]) as usize;
+        if self.has_extra_fields() {
+            let end = molecule::unpack_number(&slice[16..]) as usize;
+            Byte32VecReader::new_unchecked(&self.as_slice()[start..end])
+        } else {
+            Byte32VecReader::new_unchecked(&self.as_slice()[start..])
+        }
+    }
+}
+impl<'r> molecule::prelude::Reader<'r> for GcsFilterHashesReader<'r> {
+    type Entity = GcsFilterHashes;
+    const NAME: &'static str = "GcsFilterHashesReader";
+    fn to_entity(&self) -> Self::Entity {
+        Self::Entity::new_unchecked(self.as_slice().to_owned().into())
+    }
+    fn new_unchecked(slice: &'r [u8]) -> Self {
+        GcsFilterHashesReader(slice)
+    }
+    fn as_slice(&self) -> &'r [u8] {
+        self.0
+    }
+    fn verify(slice: &[u8], compatible: bool) -> molecule::error::VerificationResult<()> {
+        use molecule::verification_error as ve;
+        let slice_len = slice.len();
+        if slice_len < molecule::NUMBER_SIZE {
+            return ve!(Self, HeaderIsBroken, molecule::NUMBER_SIZE, slice_len);
+        }
+        let total_size = molecule::unpack_number(slice) as usize;
+        if slice_len != total_size {
+            return ve!(Self, TotalSizeNotMatch, total_size, slice_len);
+        }
+        if slice_len == molecule::NUMBER_SIZE && Self::FIELD_COUNT == 0 {
+            return Ok(());
+        }
+        if slice_len < molecule::NUMBER_SIZE * 2 {
+            return ve!(Self, HeaderIsBroken, molecule::NUMBER_SIZE * 2, slice_len);
+        }
+        let offset_first = molecule::unpack_number(&slice[molecule::NUMBER_SIZE..]) as usize;
+        if offset_first % 4 != 0 || offset_first < molecule::NUMBER_SIZE * 2 {
+            return ve!(Self, OffsetsNotMatch);
+        }
+        let field_count = offset_first / 4 - 1;
+        if field_count < Self::FIELD_COUNT {
+            return ve!(Self, FieldCountNotMatch, Self::FIELD_COUNT, field_count);
+        } else if !compatible && field_count > Self::FIELD_COUNT {
+            return ve!(Self, FieldCountNotMatch, Self::FIELD_COUNT, field_count);
+        };
+        let header_size = molecule::NUMBER_SIZE * (field_count + 1);
+        if slice_len < header_size {
+            return ve!(Self, HeaderIsBroken, header_size, slice_len);
+        }
+        let mut offsets: Vec<usize> = slice[molecule::NUMBER_SIZE..]
+            .chunks(molecule::NUMBER_SIZE)
+            .take(field_count)
+            .map(|x| molecule::unpack_number(x) as usize)
+            .collect();
+        offsets.push(total_size);
+        if offsets.windows(2).any(|i| i[0] > i[1]) {
+            return ve!(Self, OffsetsNotMatch);
+        }
+        Byte32Reader::verify(&slice[offsets[0]..offsets[1]], compatible)?;
+        Byte32Reader::verify(&slice[offsets[1]..offsets[2]], compatible)?;
+        Byte32VecReader::verify(&slice[offsets[2]..offsets[3]], compatible)?;
+        Ok(())
+    }
+}
+#[derive(Debug, Default)]
+pub struct GcsFilterHashesBuilder {
+    pub(crate) stop_hash: Byte32,
+    pub(crate) parent_hash: Byte32,
+    pub(crate) filter_hashes: Byte32Vec,
+}
+impl GcsFilterHashesBuilder {
+    pub const FIELD_COUNT: usize = 3;
+    pub fn stop_hash(mut self, v: Byte32) -> Self {
+        self.stop_hash = v;
+        self
+    }
+    pub fn parent_hash(mut self, v: Byte32) -> Self {
+        self.parent_hash = v;
+        self
+    }
+    pub fn filter_hashes(mut self, v: Byte32Vec) -> Self {
+        self.filter_hashes = v;
+        self
+    }
+}
+impl molecule::prelude::Builder for GcsFilterHashesBuilder {
+    type Entity = GcsFilterHashes;
+    const NAME: &'static str = "GcsFilterHashesBuilder";
+    fn expected_length(&self) -> usize {
+        molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1)
+            + self.stop_hash.as_slice().len()
+            + self.parent_hash.as_slice().len()
+            + self.filter_hashes.as_slice().len()
+    }
+    fn write<W: ::molecule::io::Write>(&self, writer: &mut W) -> ::molecule::io::Result<()> {
+        let mut total_size = molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1);
+        let mut offsets = Vec::with_capacity(Self::FIELD_COUNT);
+        offsets.push(total_size);
+        total_size += self.stop_hash.as_slice().len();
+        offsets.push(total_size);
+        total_size += self.parent_hash.as_slice().len();
+        offsets.push(total_size);
+        total_size += self.filter_hashes.as_slice().len();
+        writer.write_all(&molecule::pack_number(total_size as molecule::Number))?;
+        for offset in offsets.into_iter() {
+            writer.write_all(&molecule::pack_number(offset as molecule::Number))?;
+        }
+        writer.write_all(self.stop_hash.as_slice())?;
+        writer.write_all(self.parent_hash.as_slice())?;
+        writer.write_all(self.filter_hashes.as_slice())?;
+        Ok(())
+    }
+    fn build(&self) -> Self::Entity {
+        let mut inner = Vec::with_capacity(self.expected_length());
+        self.write(&mut inner)
+            .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
+        GcsFilterHashes::new_unchecked(inner.into())
+    }
+}
+#[derive(Clone)]
+pub struct GetGcsFilterCheckPoint(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for GetGcsFilterCheckPoint {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl ::core::fmt::Debug for GetGcsFilterCheckPoint {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl ::core::fmt::Display for GetGcsFilterCheckPoint {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "stop_hash", self.stop_hash())?;
+        write!(f, ", {}: {}", "interval", self.interval())?;
+        write!(f, " }}")
+    }
+}
+impl ::core::default::Default for GetGcsFilterCheckPoint {
+    fn default() -> Self {
+        let v: Vec<u8> = vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0,
+        ];
+        GetGcsFilterCheckPoint::new_unchecked(v.into())
+    }
+}
+impl GetGcsFilterCheckPoint {
+    pub const TOTAL_SIZE: usize = 36;
+    pub const FIELD_SIZES: [usize; 2] = [32, 4];
+    pub const FIELD_COUNT: usize = 2;
+    pub fn stop_hash(&self) -> Byte32 {
+        Byte32::new_unchecked(self.0.slice(0..32))
+    }
+    pub fn interval(&self) -> Uint32 {
+        Uint32::new_unchecked(self.0.slice(32..36))
+    }
+    pub fn as_reader<'r>(&'r self) -> GetGcsFilterCheckPointReader<'r> {
+        GetGcsFilterCheckPointReader::new_unchecked(self.as_slice())
+    }
+}
+impl molecule::prelude::Entity for GetGcsFilterCheckPoint {
+    type Builder = GetGcsFilterCheckPointBuilder;
+    const NAME: &'static str = "GetGcsFilterCheckPoint";
+    fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
+        GetGcsFilterCheckPoint(data)
+    }
+    fn as_bytes(&self) -> molecule::bytes::Bytes {
+        self.0.clone()
+    }
+    fn as_slice(&self) -> &[u8] {
+        &self.0[..]
+    }
+    fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GetGcsFilterCheckPointReader::from_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GetGcsFilterCheckPointReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn new_builder() -> Self::Builder {
+        ::core::default::Default::default()
+    }
+    fn as_builder(self) -> Self::Builder {
+        Self::new_builder()
+            .stop_hash(self.stop_hash())
+            .interval(self.interval())
+    }
+}
+#[derive(Clone, Copy)]
+pub struct GetGcsFilterCheckPointReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for GetGcsFilterCheckPointReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl<'r> ::core::fmt::Debug for GetGcsFilterCheckPointReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl<'r> ::core::fmt::Display for GetGcsFilterCheckPointReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "stop_hash", self.stop_hash())?;
+        write!(f, ", {}: {}", "interval", self.interval())?;
+        write!(f, " }}")
+    }
+}
+impl<'r> GetGcsFilterCheckPointReader<'r> {
+    pub const TOTAL_SIZE: usize = 36;
+    pub const FIELD_SIZES: [usize; 2] = [32, 4];
+    pub const FIELD_COUNT: usize = 2;
+    pub fn stop_hash(&self) -> Byte32Reader<'r> {
+        Byte32Reader::new_unchecked(&self.as_slice()[0..32])
+    }
+    pub fn interval(&self) -> Uint32Reader<'r> {
+        Uint32Reader::new_unchecked(&self.as_slice()[32..36])
+    }
+}
+impl<'r> molecule::prelude::Reader<'r> for GetGcsFilterCheckPointReader<'r> {
+    type Entity = GetGcsFilterCheckPoint;
+    const NAME: &'static str = "GetGcsFilterCheckPointReader";
+    fn to_entity(&self) -> Self::Entity {
+        Self::Entity::new_unchecked(self.as_slice().to_owned().into())
+    }
+    fn new_unchecked(slice: &'r [u8]) -> Self {
+        GetGcsFilterCheckPointReader(slice)
+    }
+    fn as_slice(&self) -> &'r [u8] {
+        self.0
+    }
+    fn verify(slice: &[u8], _compatible: bool) -> molecule::error::VerificationResult<()> {
+        use molecule::verification_error as ve;
+        let slice_len = slice.len();
+        if slice_len != Self::TOTAL_SIZE {
+            return ve!(Self, TotalSizeNotMatch, Self::TOTAL_SIZE, slice_len);
+        }
+        Ok(())
+    }
+}
+#[derive(Debug, Default)]
+pub struct GetGcsFilterCheckPointBuilder {
+    pub(crate) stop_hash: Byte32,
+    pub(crate) interval: Uint32,
+}
+impl GetGcsFilterCheckPointBuilder {
+    pub const TOTAL_SIZE: usize = 36;
+    pub const FIELD_SIZES: [usize; 2] = [32, 4];
+    pub const FIELD_COUNT: usize = 2;
+    pub fn stop_hash(mut self, v: Byte32) -> Self {
+        self.stop_hash = v;
+        self
+    }
+    pub fn interval(mut self, v: Uint32) -> Self {
+        self.interval = v;
+        self
+    }
+}
+impl molecule::prelude::Builder for GetGcsFilterCheckPointBuilder {
+    type Entity = GetGcsFilterCheckPoint;
+    const NAME: &'static str = "GetGcsFilterCheckPointBuilder";
+    fn expected_length(&self) -> usize {
+        Self::TOTAL_SIZE
+    }
+    fn write<W: ::molecule::io::Write>(&self, writer: &mut W) -> ::molecule::io::Result<()> {
+        writer.write_all(self.stop_hash.as_slice())?;
+        writer.write_all(self.interval.as_slice())?;
+        Ok(())
+    }
+    fn build(&self) -> Self::Entity {
+        let mut inner = Vec::with_capacity(self.expected_length());
+        self.write(&mut inner)
+            .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
+        GetGcsFilterCheckPoint::new_unchecked(inner.into())
+    }
+}
+#[derive(Clone)]
+pub struct GcsFilterCheckPoint(molecule::bytes::Bytes);
+impl ::core::fmt::LowerHex for GcsFilterCheckPoint {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl ::core::fmt::Debug for GcsFilterCheckPoint {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl ::core::fmt::Display for GcsFilterCheckPoint {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "stop_hash", self.stop_hash())?;
+        write!(f, ", {}: {}", "filter_hashes", self.filter_hashes())?;
+        let extra_count = self.count_extra_fields();
+        if extra_count != 0 {
+            write!(f, ", .. ({} fields)", extra_count)?;
+        }
+        write!(f, " }}")
+    }
+}
+impl ::core::default::Default for GcsFilterCheckPoint {
+    fn default() -> Self {
+        let v: Vec<u8> = vec![
+            48, 0, 0, 0, 12, 0, 0, 0, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        GcsFilterCheckPoint::new_unchecked(v.into())
+    }
+}
+impl GcsFilterCheckPoint {
+    pub const FIELD_COUNT: usize = 2;
+    pub fn total_size(&self) -> usize {
+        molecule::unpack_number(self.as_slice()) as usize
+    }
+    pub fn field_count(&self) -> usize {
+        if self.total_size() == molecule::NUMBER_SIZE {
+            0
+        } else {
+            (molecule::unpack_number(&self.as_slice()[molecule::NUMBER_SIZE..]) as usize / 4) - 1
+        }
+    }
+    pub fn count_extra_fields(&self) -> usize {
+        self.field_count() - Self::FIELD_COUNT
+    }
+    pub fn has_extra_fields(&self) -> bool {
+        Self::FIELD_COUNT != self.field_count()
+    }
+    pub fn stop_hash(&self) -> Byte32 {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[4..]) as usize;
+        let end = molecule::unpack_number(&slice[8..]) as usize;
+        Byte32::new_unchecked(self.0.slice(start..end))
+    }
+    pub fn filter_hashes(&self) -> Byte32Vec {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[8..]) as usize;
+        if self.has_extra_fields() {
+            let end = molecule::unpack_number(&slice[12..]) as usize;
+            Byte32Vec::new_unchecked(self.0.slice(start..end))
+        } else {
+            Byte32Vec::new_unchecked(self.0.slice(start..))
+        }
+    }
+    pub fn as_reader<'r>(&'r self) -> GcsFilterCheckPointReader<'r> {
+        GcsFilterCheckPointReader::new_unchecked(self.as_slice())
+    }
+}
+impl molecule::prelude::Entity for GcsFilterCheckPoint {
+    type Builder = GcsFilterCheckPointBuilder;
+    const NAME: &'static str = "GcsFilterCheckPoint";
+    fn new_unchecked(data: molecule::bytes::Bytes) -> Self {
+        GcsFilterCheckPoint(data)
+    }
+    fn as_bytes(&self) -> molecule::bytes::Bytes {
+        self.0.clone()
+    }
+    fn as_slice(&self) -> &[u8] {
+        &self.0[..]
+    }
+    fn from_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GcsFilterCheckPointReader::from_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn from_compatible_slice(slice: &[u8]) -> molecule::error::VerificationResult<Self> {
+        GcsFilterCheckPointReader::from_compatible_slice(slice).map(|reader| reader.to_entity())
+    }
+    fn new_builder() -> Self::Builder {
+        ::core::default::Default::default()
+    }
+    fn as_builder(self) -> Self::Builder {
+        Self::new_builder()
+            .stop_hash(self.stop_hash())
+            .filter_hashes(self.filter_hashes())
+    }
+}
+#[derive(Clone, Copy)]
+pub struct GcsFilterCheckPointReader<'r>(&'r [u8]);
+impl<'r> ::core::fmt::LowerHex for GcsFilterCheckPointReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        use molecule::hex_string;
+        if f.alternate() {
+            write!(f, "0x")?;
+        }
+        write!(f, "{}", hex_string(self.as_slice()))
+    }
+}
+impl<'r> ::core::fmt::Debug for GcsFilterCheckPointReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{}({:#x})", Self::NAME, self)
+    }
+}
+impl<'r> ::core::fmt::Display for GcsFilterCheckPointReader<'r> {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        write!(f, "{} {{ ", Self::NAME)?;
+        write!(f, "{}: {}", "stop_hash", self.stop_hash())?;
+        write!(f, ", {}: {}", "filter_hashes", self.filter_hashes())?;
+        let extra_count = self.count_extra_fields();
+        if extra_count != 0 {
+            write!(f, ", .. ({} fields)", extra_count)?;
+        }
+        write!(f, " }}")
+    }
+}
+impl<'r> GcsFilterCheckPointReader<'r> {
+    pub const FIELD_COUNT: usize = 2;
+    pub fn total_size(&self) -> usize {
+        molecule::unpack_number(self.as_slice()) as usize
+    }
+    pub fn field_count(&self) -> usize {
+        if self.total_size() == molecule::NUMBER_SIZE {
+            0
+        } else {
+            (molecule::unpack_number(&self.as_slice()[molecule::NUMBER_SIZE..]) as usize / 4) - 1
+        }
+    }
+    pub fn count_extra_fields(&self) -> usize {
+        self.field_count() - Self::FIELD_COUNT
+    }
+    pub fn has_extra_fields(&self) -> bool {
+        Self::FIELD_COUNT != self.field_count()
+    }
+    pub fn stop_hash(&self) -> Byte32Reader<'r> {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[4..]) as usize;
+        let end = molecule::unpack_number(&slice[8..]) as usize;
+        Byte32Reader::new_unchecked(&self.as_slice()[start..end])
+    }
+    pub fn filter_hashes(&self) -> Byte32VecReader<'r> {
+        let slice = self.as_slice();
+        let start = molecule::unpack_number(&slice[8..]) as usize;
+        if self.has_extra_fields() {
+            let end = molecule::unpack_number(&slice[12..]) as usize;
+            Byte32VecReader::new_unchecked(&self.as_slice()[start..end])
+        } else {
+            Byte32VecReader::new_unchecked(&self.as_slice()[start..])
+        }
+    }
+}
+impl<'r> molecule::prelude::Reader<'r> for GcsFilterCheckPointReader<'r> {
+    type Entity = GcsFilterCheckPoint;
+    const NAME: &'static str = "GcsFilterCheckPointReader";
+    fn to_entity(&self) -> Self::Entity {
+        Self::Entity::new_unchecked(self.as_slice().to_owned().into())
+    }
+    fn new_unchecked(slice: &'r [u8]) -> Self {
+        GcsFilterCheckPointReader(slice)
+    }
+    fn as_slice(&self) -> &'r [u8] {
+        self.0
+    }
+    fn verify(slice: &[u8], compatible: bool) -> molecule::error::VerificationResult<()> {
+        use molecule::verification_error as ve;
+        let slice_len = slice.len();
+        if slice_len < molecule::NUMBER_SIZE {
+            return ve!(Self, HeaderIsBroken, molecule::NUMBER_SIZE, slice_len);
+        }
+        let total_size = molecule::unpack_number(slice) as usize;
+        if slice_len != total_size {
+            return ve!(Self, TotalSizeNotMatch, total_size, slice_len);
+        }
+        if slice_len == molecule::NUMBER_SIZE && Self::FIELD_COUNT == 0 {
+            return Ok(());
+        }
+        if slice_len < molecule::NUMBER_SIZE * 2 {
+            return ve!(Self, HeaderIsBroken, molecule::NUMBER_SIZE * 2, slice_len);
+        }
+        let offset_first = molecule::unpack_number(&slice[molecule::NUMBER_SIZE..]) as usize;
+        if offset_first % 4 != 0 || offset_first < molecule::NUMBER_SIZE * 2 {
+            return ve!(Self, OffsetsNotMatch);
+        }
+        let field_count = offset_first / 4 - 1;
+        if field_count < Self::FIELD_COUNT {
+            return ve!(Self, FieldCountNotMatch, Self::FIELD_COUNT, field_count);
+        } else if !compatible && field_count > Self::FIELD_COUNT {
+            return ve!(Self, FieldCountNotMatch, Self::FIELD_COUNT, field_count);
+        };
+        let header_size = molecule::NUMBER_SIZE * (field_count + 1);
+        if slice_len < header_size {
+            return ve!(Self, HeaderIsBroken, header_size, slice_len);
+        }
+        let mut offsets: Vec<usize> = slice[molecule::NUMBER_SIZE..]
+            .chunks(molecule::NUMBER_SIZE)
+            .take(field_count)
+            .map(|x| molecule::unpack_number(x) as usize)
+            .collect();
+        offsets.push(total_size);
+        if offsets.windows(2).any(|i| i[0] > i[1]) {
+            return ve!(Self, OffsetsNotMatch);
+        }
+        Byte32Reader::verify(&slice[offsets[0]..offsets[1]], compatible)?;
+        Byte32VecReader::verify(&slice[offsets[1]..offsets[2]], compatible)?;
+        Ok(())
+    }
+}
+#[derive(Debug, Default)]
+pub struct GcsFilterCheckPointBuilder {
+    pub(crate) stop_hash: Byte32,
+    pub(crate) filter_hashes: Byte32Vec,
+}
+impl GcsFilterCheckPointBuilder {
+    pub const FIELD_COUNT: usize = 2;
+    pub fn stop_hash(mut self, v: Byte32) -> Self {
+        self.stop_hash = v;
+        self
+    }
+    pub fn filter_hashes(mut self, v: Byte32Vec) -> Self {
+        self.filter_hashes = v;
+        self
+    }
+}
+impl molecule::prelude::Builder for GcsFilterCheckPointBuilder {
+    type Entity = GcsFilterCheckPoint;
+    const NAME: &'static str = "GcsFilterCheckPointBuilder";
+    fn expected_length(&self) -> usize {
+        molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1)
+            + self.stop_hash.as_slice().len()
+            + self.filter_hashes.as_slice().len()
+    }
+    fn write<W: ::molecule::io::Write>(&self, writer: &mut W) -> ::molecule::io::Result<()> {
+        let mut total_size = molecule::NUMBER_SIZE * (Self::FIELD_COUNT + 1);
+        let mut offsets = Vec::with_capacity(Self::FIELD_COUNT);
+        offsets.push(total_size);
+        total_size += self.stop_hash.as_slice().len();
+        offsets.push(total_size);
+        total_size += self.filter_hashes.as_slice().len();
+        writer.write_all(&molecule::pack_number(total_size as molecule::Number))?;
+        for offset in offsets.into_iter() {
+            writer.write_all(&molecule::pack_number(offset as molecule::Number))?;
+        }
+        writer.write_all(self.stop_hash.as_slice())?;
+        writer.write_all(self.filter_hashes.as_slice())?;
+        Ok(())
+    }
+    fn build(&self) -> Self::Entity {
+        let mut inner = Vec::with_capacity(self.expected_length());
+        self.write(&mut inner)
+            .unwrap_or_else(|_| panic!("{} build should be ok", Self::NAME));
+        GcsFilterCheckPoint::new_unchecked(inner.into())
+    }
+}

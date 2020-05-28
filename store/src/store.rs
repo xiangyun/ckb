@@ -5,7 +5,7 @@ use ckb_db_schema::{
     Col, COLUMN_BLOCK_BODY, COLUMN_BLOCK_EPOCH, COLUMN_BLOCK_EXT, COLUMN_BLOCK_HEADER,
     COLUMN_BLOCK_PROPOSAL_IDS, COLUMN_BLOCK_UNCLE, COLUMN_CELL, COLUMN_CELL_DATA, COLUMN_EPOCH,
     COLUMN_INDEX, COLUMN_META, COLUMN_TRANSACTION_INFO, COLUMN_UNCLES, META_CURRENT_EPOCH_KEY,
-    META_TIP_HEADER_KEY,
+    META_TIP_HEADER_KEY, COLUMN_GCS_FILTER
 };
 use ckb_freezer::Freezer;
 use ckb_types::{
@@ -227,6 +227,12 @@ pub trait ChainStore<'a>: Send + Sync + Sized {
     fn get_block_number(&'a self, hash: &packed::Byte32) -> Option<BlockNumber> {
         self.get(COLUMN_INDEX, hash.as_slice())
             .map(|raw| packed::Uint64Reader::from_slice_should_be_ok(&raw.as_ref()).unpack())
+    }
+
+    /// Get gcs filter by block header hash
+    fn get_gcs_filter(&'a self, hash: &packed::Byte32) -> Option<Vec<u8>> {
+        self.get(COLUMN_GCS_FILTER, hash.as_slice())
+            .map(|raw| raw.as_ref().into())
     }
 
     /// TODO(doc): @quake

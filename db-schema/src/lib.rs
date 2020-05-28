@@ -34,6 +34,8 @@ pub const COLUMN_UNCLES: Col = "11";
 pub const COLUMN_CELL_DATA: Col = "12";
 /// Column store block number-hash pair
 pub const COLUMN_NUMBER_HASH: Col = "13";
+/// Column store gcs filter
+pub const COLUMN_GCS_FILTER: Col = "14";
 
 /// META_TIP_HEADER_KEY tracks the latest known best block header
 pub const META_TIP_HEADER_KEY: &[u8] = b"TIP_HEADER";

@@ -13,7 +13,7 @@ use ckb_resource::Resource;
 use ckb_rpc::{RpcServer, ServiceBuilder};
 use ckb_shared::shared::{Shared, SharedBuilder};
 use ckb_store::{ChainDB, ChainStore};
-use ckb_sync::{NetTimeProtocol, Relayer, SyncShared, Synchronizer};
+use ckb_sync::{NetTimeProtocol, Relayer, SyncShared, Synchronizer, GcsFilterProtocol};
 use ckb_types::packed::Byte32;
 use ckb_types::{core::cell::setup_system_cell_cache, prelude::*};
 use ckb_verification::GenesisVerifier;
@@ -115,6 +115,7 @@ pub fn run(mut args: RunArgs, version: Version, async_handle: Handle) -> Result<
         args.config.tx_pool.min_fee_rate,
         args.config.tx_pool.max_tx_verify_cycles,
     );
+    let gcs_filter = GcsFilterProtocol::new(Arc::clone(&sync_shared));
     let net_timer = NetTimeProtocol::default();
     let alert_signature_config = args.config.alert_signature.unwrap_or_default();
     let alert_relayer = AlertRelayer::new(
@@ -135,6 +136,11 @@ pub fn run(mut args: RunArgs, version: Version, async_handle: Handle) -> Result<
         CKBProtocol::new_with_support_protocol(
             SupportProtocols::Relay,
             Box::new(relayer),
+            Arc::clone(&network_state),
+        ),
+        CKBProtocol::new_with_support_protocol(
+            SupportProtocols::GcsFilter,
+            Box::new(gcs_filter),
             Arc::clone(&network_state),
         ),
         CKBProtocol::new_with_support_protocol(
