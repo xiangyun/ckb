@@ -144,8 +144,8 @@ impl TestProtocol {
 
     pub fn filter() -> Self {
         Self {
-            id: NetworkProtocol::FILTER.into(),
-            protocol_name: "fil".to_string(),
+            id: SupportProtocols::BloomFilter.protocol_id(),
+            protocol_name: "bloomfilter".to_string(),
             supported_versions: vec!["1".to_string()],
         }
     }

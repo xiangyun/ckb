@@ -1,7 +1,7 @@
 use super::build_set_filter;
 use crate::utils::sleep;
 use crate::{Net, Spec, TestProtocol};
-use ckb_sync::NetworkProtocol;
+use ckb_network::SupportProtocols;
 use ckb_types::{packed, prelude::*};
 
 pub struct GetFilteredBlocks;
@@ -19,7 +19,7 @@ impl Spec for GetFilteredBlocks {
         let (peer_id, _, _) = net.receive();
 
         net.send(
-            NetworkProtocol::FILTER.into(),
+            SupportProtocols::BloomFilter.protocol_id(),
             peer_id,
             build_set_filter(&node.always_success_script().calc_script_hash()),
         );
@@ -27,7 +27,7 @@ impl Spec for GetFilteredBlocks {
         sleep(5);
 
         net.send(
-            NetworkProtocol::FILTER.into(),
+            SupportProtocols::BloomFilter.protocol_id(),
             peer_id,
             packed::FilterMessage::new_builder()
                 .set(

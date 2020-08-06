@@ -47,7 +47,7 @@ impl SupportProtocols {
             SupportProtocols::Relay => "/ckb/rel",
             SupportProtocols::Time => "/ckb/tim",
             SupportProtocols::Alert => "/ckb/alt",
-            SupportProtocols::BloomFilter => "ckb/bloomfilter",
+            SupportProtocols::BloomFilter => "/ckb/bloomfilter",
         }
         .to_owned()
     }

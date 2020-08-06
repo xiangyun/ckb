@@ -21,6 +21,7 @@ pub use crate::relayer::Relayer;
 pub use crate::status::{Status, StatusCode};
 pub use crate::synchronizer::Synchronizer;
 pub use crate::types::SyncShared;
+pub use bloom_filters::BloomFilter;
 use std::time::Duration;
 
 pub const MAX_HEADERS_LEN: usize = 2_000;
