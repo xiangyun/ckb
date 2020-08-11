@@ -394,12 +394,9 @@ fn all_specs() -> SpecMap {
         Box::new(RpcTruncate),
         Box::new(SyncTooNewBlock),
         Box::new(RelayTooNewBlock),
-<<<<<<< HEAD
         Box::new(LastCommonHeaderForPeerWithWorseChain),
-=======
         Box::new(SetFilter),
         Box::new(GetFilteredBlocks),
->>>>>>> feat: add filter protocol
     ];
     specs.into_iter().map(|spec| (spec.name(), spec)).collect()
 }
