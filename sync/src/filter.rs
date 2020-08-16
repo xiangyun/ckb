@@ -196,7 +196,7 @@ impl CKBProtocolHandler for FilterProtocol {
     fn notify(&mut self, nc: Arc<dyn CKBProtocolContext + Sync>, token: u64) {
         match token {
             SEND_FILTERED_BLOCK_TOKEN => {
-                if let Ok(block) = self.new_block_receiver.try_recv() {
+                while let Ok(block) = self.new_block_receiver.try_recv() {
                     for (peer, filter) in self.peer_filters.read().iter() {
                         let filtered_block =
                             build_filtered_block(&block, filter, self.shared.store());
