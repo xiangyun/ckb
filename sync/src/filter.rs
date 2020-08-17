@@ -146,6 +146,29 @@ impl FilterProtocol {
                     );
                 }
             }
+            packed::FilterMessageUnionReader::SendTransaction(reader) => {
+                let tx_pool = self.shared.shared().tx_pool_controller();
+                let tx = reader.transaction().to_entity().into_view();
+                let tx_hash = tx.hash();
+                let submit_result = tx_pool.submit_txs(vec![tx]);
+                match submit_result {
+                    Ok(Ok(_)) => {
+                        let peer_index = PeerIndex::new(usize::max_value());
+                        self.shared
+                            .state()
+                            .tx_hashes()
+                            .entry(peer_index)
+                            .or_default()
+                            .insert(tx_hash);
+                    }
+                    Ok(Err(err)) => {
+                        warn!("submit txs to pool error: {}", err);
+                    }
+                    Err(err) => {
+                        warn!("cannot submit txs to pool, error: {}", err);
+                    }
+                }
+            }
             packed::FilterMessageUnionReader::FilteredBlocks(_)
             | packed::FilterMessageUnionReader::FilteredBlock(_) => {
                 nc.ban_peer(
@@ -194,22 +217,18 @@ impl CKBProtocolHandler for FilterProtocol {
     }
 
     fn notify(&mut self, nc: Arc<dyn CKBProtocolContext + Sync>, token: u64) {
-        match token {
-            SEND_FILTERED_BLOCK_TOKEN => {
-                while let Ok(block) = self.new_block_receiver.try_recv() {
-                    for (peer, filter) in self.peer_filters.read().iter() {
-                        let filtered_block =
-                            build_filtered_block(&block, filter, self.shared.store());
-                        let message = packed::FilterMessage::new_builder()
-                            .set(filtered_block)
-                            .build();
-                        if let Err(err) = nc.send_message_to(*peer, message.as_bytes()) {
-                            debug!("filter send FilteredBlock message error: {:?}", err);
-                        }
+        if let SEND_FILTERED_BLOCK_TOKEN = token {
+            while let Ok(block) = self.new_block_receiver.try_recv() {
+                for (peer, filter) in self.peer_filters.read().iter() {
+                    let filtered_block = build_filtered_block(&block, filter, self.shared.store());
+                    let message = packed::FilterMessage::new_builder()
+                        .set(filtered_block)
+                        .build();
+                    if let Err(err) = nc.send_message_to(*peer, message.as_bytes()) {
+                        debug!("filter send FilteredBlock message error: {:?}", err);
                     }
                 }
             }
-            _ => {}
         }
     }
 
@@ -248,7 +267,7 @@ fn build_filtered_transactions<'a, S: ChainStore<'a>>(
             // 1. Check the hash of the transaction itself
             // 2. For each output, check the script hash of lock and type
             // 3. For each input, check the script hash of previous output's lock and type
-            if filter.contains(&tx.hash())
+            let matched = filter.contains(&tx.hash())
                 || tx
                     .outputs()
                     .into_iter()
@@ -264,8 +283,8 @@ fn build_filtered_transactions<'a, S: ChainStore<'a>>(
                                 filter,
                             )
                         })
-                })
-            {
+                });
+            if matched {
                 Some((index as u32, tx.data()))
             } else {
                 None

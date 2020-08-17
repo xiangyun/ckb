@@ -222,6 +222,7 @@ union FilterMessage {
     FilteredBlock,
     GetFilteredBlocks,
     FilteredBlocks,
+    SendTransaction,
 }
 
 table SetFilter {
@@ -259,6 +260,10 @@ table FilteredBlocks {
     unmatched_block_hashes: Byte32Vec,
     matched_block_hashes:   Byte32Vec,
     matched_blocks:         FilteredTransactionsVec,
+}
+
+table SendTransaction {
+    transaction: Transaction,
 }
 
 /* Types for Network/Others */
