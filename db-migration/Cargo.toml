@@ -15,7 +15,7 @@ ckb-db = { path = "../db", version = "= 0.37.0" }
 ckb-logger = { path = "../util/logger", version = "= 0.37.0" }
 ckb-error = { path = "../error", version = "= 0.37.0" }
 indicatif = "0.15"
-console = "0.12"
+console = ">=0.9.1, <1.0.0"
 
 [dev-dependencies]
 tempfile = "3.0"
