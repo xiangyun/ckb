@@ -1042,6 +1042,7 @@ impl<T: ExitHandler> NetworkService<T> {
             let network_state = Arc::clone(&network_state);
             let p2p_control = p2p_control.clone();
             handle.spawn_task(async move {
+                #[cfg(not(target_arch = "wasm32"))]
                 for addr in &config.listen_addresses {
                     match p2p_service.listen(addr.to_owned()).await {
                         Ok(listen_address) => {

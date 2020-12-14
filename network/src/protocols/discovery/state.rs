@@ -41,6 +41,7 @@ impl SessionState {
     ) -> SessionState {
         let mut addr_known = AddrKnown::default();
         let remote_addr = if context.session.ty.is_outbound() {
+            #[cfg(not(target_arch = "wasm32"))]
             let port = context
                 .listens()
                 .iter()
@@ -54,6 +55,8 @@ impl SessionState {
                     }
                 })
                 .next();
+            #[cfg(target_arch = "wasm32")]
+            let port = None;
 
             let msg = encode(DiscoveryMessage::GetNodes {
                 #[cfg(target_os = "linux")]

@@ -8,10 +8,27 @@ description = "TODO(doc): @doitian crate description"
 homepage = "https://github.com/nervosnetwork/ckb"
 repository = "https://github.com/nervosnetwork/ckb"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 ckb-types = { path = "../util/types", version = "= 0.39.0-pre" }
 ckb-script = { path = "../script", version = "= 0.39.0-pre", default-features = false, features = [] }
+ckb-network = { path = "../network", version = "= 0.39.0-pre" }
+ckb-app-config = { path = "../util/app-config", version = "= 0.39.0-pre" }
+ckb-resource = { path = "../resource", version = "= 0.39.0-pre" }
+ckb-chain-spec = { path = "../spec", version = "= 0.39.0-pre" }
+ckb-hash = { path = "../util/hash", version = "= 0.39.0-pre" }
+ckb-spawn = { path = "../util/spawn", version = "= 0.39.0-pre" }
+multiaddr = { version="0.2.0", package="tentacle-multiaddr" }
+wasm-bindgen-futures = "0.4"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
 
 # Prevent this from interfering with workspaces
 [workspace]
 members = ["."]
+
+[profile.release]
+lto = true

@@ -2164,6 +2164,10 @@ name = "futures-timer"
 version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e64b03909df88034c26dc1547e8970b91f98bdb65165d6a4e9110d94263dbb2c"
+dependencies = [
+ "gloo-timers",
+ "send_wrapper",
+]
 
 [[package]]
 name = "futures-util"
@@ -2244,6 +2248,19 @@ dependencies = [
  "log",
  "memchr",
  "regex",
+]
+
+[[package]]
+name = "gloo-timers"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47204a46aaff920a1ea58b11d03dec6f704287d27561724a4631e450654a891f"
+dependencies = [
+ "futures-channel",
+ "futures-core",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -4537,6 +4554,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
+name = "send_wrapper"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f638d531eccd6e23b980caf34876660d38e265409d8e99b397ab71eb3612fad0"
+
+[[package]]
 name = "serde"
 version = "1.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4838,6 +4861,7 @@ checksum = "e4f1239fa71a73627796acd21094b6a21a7e27c1e4651192fbc572653db487e0"
 dependencies = [
  "bytes 0.5.6",
  "futures 0.3.8",
+ "futures-timer",
  "igd",
  "js-sys",
  "libc",
@@ -5282,6 +5306,7 @@ checksum = "0087249d1db5eaa351500c05f05a165f7aeaf38fd57679b54092d89ae24eaed9"
 dependencies = [
  "bytes 0.5.6",
  "futures 0.3.8",
+ "futures-timer",
  "log",
  "tokio 0.2.24",
  "tokio-util",
