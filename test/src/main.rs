@@ -390,6 +390,7 @@ fn all_specs() -> Vec<Box<dyn Spec>> {
         Box::new(SyncTooNewBlock),
         Box::new(RelayTooNewBlock),
         Box::new(LastCommonHeaderForPeerWithWorseChain),
+        Box::new(ProposeConflictTransactionsThenSubmit),
     ];
     specs.shuffle(&mut thread_rng());
     specs
