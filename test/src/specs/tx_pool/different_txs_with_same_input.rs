@@ -85,18 +85,26 @@ impl Spec for ProposeConflictTransactionsThenSubmit {
             .build();
         node0.submit_block(&block);
 
-        let will_fail = true;
-        if will_fail {
+        let case = ::std::env::var("ProposeConflictTransactionsThenSubmit_CASE")
+            .unwrap_or("will_fail_1".to_string());
+        info!("ProposeConflictTransactionsThenSubmit_CASE: {}", case);
+        if case == "will_fail_1" {
             // 如果将上述 `block` 推进到 proposal window，
             // 那么在接下来 node0.submit_transaction(&tx_b) 时会返回错误，错误是：
             // TransactionFailedToResolve: OutPoint(Dead(OutPoint(...)))，指 tx_b input was dead，但实际上并 tx_a 还没上链，并不算 dead。
             mine(node0, node0.consensus().tx_proposal_window().closest());
             node0.submit_transaction(&tx_a);
             node0.submit_transaction(&tx_b);
-        } else {
+        } else if case == "will_success_1" {
+            mine(node0, node0.consensus().tx_proposal_window().farthest());
+            node0.submit_transaction(&tx_a);
+            node0.submit_transaction(&tx_b);
+        } else if case == "will_success_2" {
             // 如果不推进到 proposal window 这样就一切正常
             node0.submit_transaction(&tx_a);
             node0.submit_transaction(&tx_b);
+        } else {
+            unreachable!()
         }
 
         // Inside `mine`, RPC `get_block_template` will be involved, that's our testing interface.
