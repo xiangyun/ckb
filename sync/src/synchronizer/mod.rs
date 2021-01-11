@@ -13,6 +13,7 @@ use self::headers_process::HeadersProcess;
 use self::in_ibd_process::InIBDProcess;
 use crate::block_status::BlockStatus;
 use crate::types::{HeaderView, HeadersSyncController, IBDState, PeerFlags, Peers, SyncShared};
+use crate::utils::send_message_to;
 use crate::{
     Status, StatusCode, BAD_MESSAGE_BAN_TIME, CHAIN_SYNC_TIMEOUT, EVICTION_HEADERS_RESPONSE_TIME,
     MAX_OUTBOUND_PEERS_TO_PROTECT_FROM_DISCONNECT, MAX_TIP_AGE,
@@ -194,7 +195,6 @@ impl BlockFetchCMD {
         ) {
             debug!("synchronizer send GetBlocks error: {:?}", err);
         }
-        crate::synchronizer::metrics_counter_send(message.to_enum().item_name());
     }
 }
 
@@ -640,10 +640,7 @@ impl Synchronizer {
         let message = packed::SyncMessage::new_builder().set(content).build();
 
         debug!("send_getblocks len={:?} to peer={}", v_fetch.len(), peer);
-        if let Err(err) = nc.send_message_to(peer, message.as_bytes()) {
-            debug!("synchronizer send GetBlocks error: {:?}", err);
-        }
-        crate::synchronizer::metrics_counter_send(message.to_enum().item_name());
+        let _status = send_message_to(nc, peer, &message);
     }
 }
 
@@ -1828,8 +1825,4 @@ mod tests {
             );
         }
     }
-}
-
-pub(self) fn metrics_counter_send(item_name: &str) {
-    metrics!(counter, "ckb-net.sent", 1, "action" => "sync", "item" => item_name.to_owned());
 }
