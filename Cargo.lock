@@ -1475,7 +1475,7 @@ dependencies = [
 [[package]]
 name = "ckb-vm"
 version = "0.19.1"
-source = "git+https://github.com/mohanson/ckb-vm?branch=instruction_design#fbd9af94342da2fe42839f965dbab1851aa87fb4"
+source = "git+https://github.com/mohanson/ckb-vm?rev=fbd9af9#fbd9af94342da2fe42839f965dbab1851aa87fb4"
 dependencies = [
  "byteorder",
  "bytes 0.5.6",
@@ -1494,7 +1494,7 @@ dependencies = [
 [[package]]
 name = "ckb-vm-definitions"
 version = "0.19.1"
-source = "git+https://github.com/mohanson/ckb-vm?branch=instruction_design#fbd9af94342da2fe42839f965dbab1851aa87fb4"
+source = "git+https://github.com/mohanson/ckb-vm?rev=fbd9af9#fbd9af94342da2fe42839f965dbab1851aa87fb4"
 
 [[package]]
 name = "clap"

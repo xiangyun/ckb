@@ -23,26 +23,20 @@ use ckb_types::{
     prelude::*,
 };
 #[cfg(has_asm)]
+use ckb_vm::machine::asm::{AsmCoreMachine, AsmMachine};
 use ckb_vm::{
-    machine::{
-        asm::{AsmCoreMachine, AsmMachine},
-        VERSION0,
-    },
-    DefaultMachineBuilder, Error as VMInternalError, InstructionCycleFunc, SupportMachine,
-    Syscalls, ISA_B, ISA_IMC,
+    machine::VERSION0, DefaultMachineBuilder, Error as VMInternalError, InstructionCycleFunc,
+    SupportMachine, Syscalls, ISA_B, ISA_IMC,
 };
 #[cfg(not(has_asm))]
-use ckb_vm::{
-    DefaultCoreMachine, DefaultMachineBuilder, Error as VMInternalError, InstructionCycleFunc,
-    SparseMemory, SupportMachine, Syscalls, TraceMachine, WXorXMemory,
-};
+use ckb_vm::{DefaultCoreMachine, SparseMemory, TraceMachine, WXorXMemory};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
 #[cfg(has_asm)]
 type CoreMachineType = Box<AsmCoreMachine>;
 #[cfg(not(has_asm))]
-type CoreMachineType = DefaultCoreMachine<u64, WXorXMemory<u64, SparseMemory<u64>>>;
+type CoreMachineType = DefaultCoreMachine<u64, WXorXMemory<SparseMemory<u64>>>;
 
 /// This struct leverages CKB VM to verify transaction inputs.
 ///
@@ -411,7 +405,7 @@ impl<'a, DL: CellDataProvider + HeaderProvider> TransactionScriptsVerifier<'a, D
         #[cfg(has_asm)]
         let core_machine = AsmCoreMachine::new(ISA_IMC | ISA_B, VERSION0, max_cycles);
         #[cfg(not(has_asm))]
-        let core_machine = DefaultCoreMachine::<u64, WXorXMemory<u64, SparseMemory<u64>>>::new(
+        let core_machine = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
             ISA_IMC | ISA_B,
             VERSION0,
             max_cycles,
