@@ -13,7 +13,7 @@ use ckb_resource::Resource;
 use ckb_rpc::{RpcServer, ServiceBuilder};
 use ckb_shared::shared::{Shared, SharedBuilder};
 use ckb_store::{ChainDB, ChainStore};
-use ckb_sync::{NetTimeProtocol, Relayer, SyncShared, Synchronizer, GcsFilterProtocol};
+use ckb_sync::{GcsFilterProtocol, NetTimeProtocol, Relayer, SyncShared, Synchronizer};
 use ckb_types::packed::Byte32;
 use ckb_types::{core::cell::setup_system_cell_cache, prelude::*};
 use ckb_verification::GenesisVerifier;

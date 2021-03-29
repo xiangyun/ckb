@@ -3,7 +3,7 @@
 /// Column families alias type
 pub type Col = &'static str;
 /// Total column number
-pub const COLUMNS: u32 = 14;
+pub const COLUMNS: u32 = 15;
 /// Column store chain index
 pub const COLUMN_INDEX: Col = "0";
 /// Column store block's header

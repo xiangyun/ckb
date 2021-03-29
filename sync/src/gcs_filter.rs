@@ -1,4 +1,6 @@
-use crate::{types::SyncShared, BAD_MESSAGE_BAN_TIME};
+//! TODO(doc): @quake
+use crate::types::SyncShared;
+use ckb_constant::sync::BAD_MESSAGE_BAN_TIME;
 use ckb_hash::blake2b_256;
 use ckb_logger::{debug, info};
 use ckb_network::{bytes::Bytes, CKBProtocolContext, CKBProtocolHandler, PeerIndex};
@@ -10,11 +12,13 @@ use std::time::Instant;
 const MAX_FILTER_RANGE_SIZE: usize = 2000;
 const MIN_CHECK_POINT_INTERVAL: u32 = 200_000;
 
+/// TODO(doc): @quake
 pub struct GcsFilterProtocol {
     shared: Arc<SyncShared>,
 }
 
 impl GcsFilterProtocol {
+    /// TODO(doc): @quake
     pub fn new(shared: Arc<SyncShared>) -> Self {
         GcsFilterProtocol { shared }
     }

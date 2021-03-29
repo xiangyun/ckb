@@ -81,7 +81,7 @@ impl SupportProtocols {
             SupportProtocols::Relay => "/ckb/rel",
             SupportProtocols::Time => "/ckb/tim",
             SupportProtocols::Alert => "/ckb/alt",
-            SupportProtocols::GcsFilter => "/ckb/gcs"
+            SupportProtocols::GcsFilter => "/ckb/gcs",
         }
         .to_owned()
     }
