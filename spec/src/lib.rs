@@ -25,8 +25,9 @@ use ckb_resource::{
 use ckb_types::{
     bytes::Bytes,
     core::{
-        capacity_bytes, BlockBuilder, BlockNumber, BlockView, Capacity, Cycle, EpochNumber,
-        EpochNumberWithFraction, Ratio, ScriptHashType, TransactionBuilder, TransactionView,
+        capacity_bytes, hardforks::HardForkSwitch, BlockBuilder, BlockNumber, BlockView, Capacity,
+        Cycle, EpochNumber, EpochNumberWithFraction, Ratio, ScriptHashType, TransactionBuilder,
+        TransactionView,
     },
     h256, packed,
     prelude::*,
@@ -43,6 +44,7 @@ pub use error::SpecError;
 
 pub mod consensus;
 mod error;
+mod hardforks;
 
 // Just a random secp256k1 secret key for dep group input cell's lock
 const SPECIAL_CELL_PRIVKEY: H256 =
@@ -220,6 +222,11 @@ pub struct Params {
     /// See [`orphan_rate_target`](consensus/struct.Consensus.html#structfield.orphan_rate_target)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub orphan_rate_target: Option<(u32, u32)>,
+    /// The parameters for hard forks.
+    ///
+    /// See [`hardforks`](consensus/struct.Consensus.html#structfield.hardforks)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hardforks: Option<hardforks::HardForks>,
 }
 
 impl Params {
@@ -459,10 +466,36 @@ impl ChainSpec {
         Ok(())
     }
 
+    /// Completes all parameters for hard forks and creates a hard fork switch.
+    ///
+    /// Verify the parameters of hard forks.
+    /// - the start block numbers for are fixed if the chain is mainnet or testnet.
+    fn build_hardfork_switch(&self) -> Result<HardForkSwitch, Box<dyn Error>> {
+        if let Some(ref hardforks) = self.params.hardforks {
+            let hardforks = hardforks.to_owned();
+            match self.name.as_str() {
+                "mainnet" => hardforks
+                    .complete_mainnet()
+                    .map(Into::into)
+                    .map_err(Into::into),
+
+                "testnet" => hardforks
+                    .complete_testnet()
+                    .map(Into::into)
+                    .map_err(Into::into),
+                _ => Ok(hardforks.into()),
+            }
+        } else {
+            Ok(HardForkSwitch::always_no_fork())
+        }
+    }
+
     /// Build consensus instance
     ///
     /// [Consensus](consensus/struct.Consensus.html)
     pub fn build_consensus(&self) -> Result<Consensus, Box<dyn Error>> {
+        let hardfork_switch = self.build_hardfork_switch()?;
+
         let genesis_epoch_ext = build_genesis_epoch_ext(
             self.params.initial_primary_epoch_reward(),
             self.genesis.compact_target,
@@ -492,6 +525,7 @@ impl ChainSpec {
             .permanent_difficulty_in_dummy(self.params.permanent_difficulty_in_dummy())
             .max_block_proposals_limit(self.params.max_block_proposals_limit())
             .orphan_rate_target(self.params.orphan_rate_target())
+            .hardfork_switch(hardfork_switch)
             .build();
 
         Ok(consensus)
