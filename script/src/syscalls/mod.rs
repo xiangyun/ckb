@@ -185,7 +185,7 @@ mod tests {
         bytes::Bytes,
         core::{
             cell::CellMeta, Capacity, EpochNumberWithFraction, HeaderBuilder, HeaderView,
-            ScriptHashType, TransactionBuilder,
+            ScriptHashType, TransactionBuilder, TransactionInfo,
         },
         packed::{Byte32, CellOutput, OutPoint, Script, ScriptBuilder},
         prelude::*,
@@ -572,6 +572,10 @@ mod tests {
         }
 
         fn get_cell_data_hash(&self, _out_point: &OutPoint) -> Option<Byte32> {
+            None
+        }
+
+        fn get_transaction_info(&self, _tx_hash: &Byte32) -> Option<TransactionInfo> {
             None
         }
     }

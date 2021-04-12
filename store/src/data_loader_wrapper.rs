@@ -3,7 +3,7 @@ use crate::ChainStore;
 use ckb_traits::{BlockEpoch, CellDataProvider, EpochProvider, HeaderProvider};
 use ckb_types::{
     bytes::Bytes,
-    core::{EpochExt, HeaderView},
+    core::{EpochExt, HeaderView, TransactionInfo},
     packed::{Byte32, OutPoint},
 };
 
@@ -25,6 +25,10 @@ impl<'a, T: ChainStore<'a>> CellDataProvider for DataLoaderWrapper<'a, T> {
         self.0
             .get_cell_data(out_point)
             .map(|(_, data_hash)| data_hash)
+    }
+
+    fn get_transaction_info(&self, tx_hash: &Byte32) -> Option<TransactionInfo> {
+        self.0.get_transaction_info(tx_hash)
     }
 }
 
