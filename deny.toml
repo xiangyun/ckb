@@ -46,5 +46,5 @@ unknown-registry = "deny"
 unknown-git = "deny"
 # TODO next-gen Remove the "allow-git" after new version of ckb-vm released.
 allow-git = [
-    "https://github.com/mohanson/ckb-vm",
+    "https://github.com/yangby-cryptape/ckb-vm",
 ]

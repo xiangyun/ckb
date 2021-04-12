@@ -22,8 +22,8 @@ byteorder = "1.3.1"
 ckb-types = {path = "../util/types", version = "= 0.41.0-pre"}
 ckb-hash = {path = "../util/hash", version = "= 0.41.0-pre"}
 # TODO next-gen Remove git for ckb-vm* after new version of ckb-vm released.
-ckb-vm-definitions = { version = "0.19", git = "https://github.com/mohanson/ckb-vm", rev = "fbd9af9" }
-ckb-vm = { version = "0.19", git = "https://github.com/mohanson/ckb-vm", rev = "fbd9af9", default-features = false }
+ckb-vm-definitions = { version = "0.19", git = "https://github.com/yangby-cryptape/ckb-vm", rev = "d010e1c" }
+ckb-vm = { version = "0.19", git = "https://github.com/yangby-cryptape/ckb-vm", rev = "d010e1c", default-features = false }
 faster-hex = "0.4"
 ckb-logger = { path = "../util/logger", version = "= 0.41.0-pre", optional = true }
 serde = { version = "1.0", features = ["derive"] }
