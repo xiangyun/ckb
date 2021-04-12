@@ -10,6 +10,7 @@ use ckb_traits::{CellDataProvider, EpochProvider, HeaderProvider};
 use ckb_types::{
     core::{
         cell::{CellMeta, ResolvedTransaction},
+        hardforks::HardForkSwitch,
         BlockNumber, Capacity, Cycle, EpochNumberWithFraction, ScriptHashType, TransactionView,
         Version,
     },
@@ -141,7 +142,12 @@ where
                 epoch_number_with_fraction,
                 consensus.cellbase_maturity(),
             ),
-            script: ScriptVerifier::new(rtx, data_loader),
+            script: ScriptVerifier::new(
+                rtx,
+                data_loader,
+                block_number,
+                consensus.hardfork_switch().to_owned(),
+            ),
             capacity: CapacityVerifier::new(rtx, consensus.dao_type_hash()),
             since: SinceVerifier::new(
                 rtx,
@@ -304,14 +310,23 @@ impl<'a> SizeVerifier<'a> {
 pub struct ScriptVerifier<'a, DL> {
     data_loader: &'a DL,
     resolved_transaction: &'a ResolvedTransaction,
+    block_number: BlockNumber,
+    hardfork_switch: HardForkSwitch,
 }
 
 impl<'a, DL: CellDataProvider + HeaderProvider> ScriptVerifier<'a, DL> {
     /// Creates a new ScriptVerifier
-    pub fn new(resolved_transaction: &'a ResolvedTransaction, data_loader: &'a DL) -> Self {
+    pub fn new(
+        resolved_transaction: &'a ResolvedTransaction,
+        data_loader: &'a DL,
+        block_number: BlockNumber,
+        hardfork_switch: HardForkSwitch,
+    ) -> Self {
         ScriptVerifier {
             data_loader,
             resolved_transaction,
+            block_number,
+            hardfork_switch,
         }
     }
 
@@ -319,7 +334,7 @@ impl<'a, DL: CellDataProvider + HeaderProvider> ScriptVerifier<'a, DL> {
     pub fn verify(&self, max_cycles: Cycle) -> Result<Cycle, Error> {
         let timer = Timer::start();
         let cycle = TransactionScriptsVerifier::new(&self.resolved_transaction, self.data_loader)
-            .verify(max_cycles)?;
+            .verify(self.block_number, &self.hardfork_switch, max_cycles)?;
         metrics!(timing, "ckb.verified_script", timer.stop());
         Ok(cycle)
     }

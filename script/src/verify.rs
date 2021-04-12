@@ -1,6 +1,7 @@
 use crate::{
     cost_model::{instruction_cycles, transferred_byte_cycles},
     error::ScriptError,
+    hardforks,
     syscalls::{
         Debugger, LoadCell, LoadCellData, LoadHeader, LoadInput, LoadScript, LoadScriptHash,
         LoadTx, LoadWitness,
@@ -17,26 +18,26 @@ use ckb_types::{
     bytes::Bytes,
     core::{
         cell::{CellMeta, ResolvedTransaction},
-        Cycle, ScriptHashType,
+        hardforks::HardForkSwitch,
+        BlockNumber, Cycle, ScriptHashType,
     },
     packed::{Byte32, Byte32Vec, BytesVec, CellInputVec, CellOutput, OutPoint, Script},
     prelude::*,
 };
 #[cfg(has_asm)]
 use ckb_vm::machine::asm::{AsmCoreMachine, AsmMachine};
-use ckb_vm::{
-    machine::VERSION0, DefaultMachineBuilder, Error as VMInternalError, InstructionCycleFunc,
-    SupportMachine, Syscalls, ISA_B, ISA_IMC,
-};
 #[cfg(not(has_asm))]
 use ckb_vm::{DefaultCoreMachine, SparseMemory, TraceMachine, WXorXMemory};
+use ckb_vm::{
+    DefaultMachineBuilder, Error as VMInternalError, InstructionCycleFunc, SupportMachine, Syscalls,
+};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
 #[cfg(has_asm)]
-type CoreMachineType = Box<AsmCoreMachine>;
+pub(crate) type CoreMachineType = Box<AsmCoreMachine>;
 #[cfg(not(has_asm))]
-type CoreMachineType = DefaultCoreMachine<u64, WXorXMemory<SparseMemory<u64>>>;
+pub(crate) type CoreMachineType = DefaultCoreMachine<u64, WXorXMemory<SparseMemory<u64>>>;
 
 /// This struct leverages CKB VM to verify transaction inputs.
 ///
@@ -49,8 +50,8 @@ pub struct TransactionScriptsVerifier<'a, DL> {
     outputs: Vec<CellMeta>,
     rtx: &'a ResolvedTransaction,
 
-    binaries_by_data_hash: HashMap<Byte32, Bytes>,
-    binaries_by_type_hash: HashMap<Byte32, (Bytes, bool)>,
+    binaries_by_data_hash: HashMap<Byte32, (Bytes, Option<BlockNumber>)>,
+    binaries_by_type_hash: HashMap<Byte32, (Bytes, Option<BlockNumber>, bool)>,
     lock_groups: HashMap<Byte32, ScriptGroup>,
     type_groups: HashMap<Byte32, ScriptGroup>,
 }
@@ -90,19 +91,49 @@ impl<'a, DL: CellDataProvider + HeaderProvider> TransactionScriptsVerifier<'a, D
             })
             .collect();
 
-        let mut binaries_by_data_hash: HashMap<Byte32, Bytes> = HashMap::default();
-        let mut binaries_by_type_hash: HashMap<Byte32, (Bytes, bool)> = HashMap::default();
+        let mut binaries_by_data_hash: HashMap<Byte32, (Bytes, Option<BlockNumber>)> =
+            HashMap::default();
+        let mut binaries_by_type_hash: HashMap<Byte32, (Bytes, Option<BlockNumber>, bool)> =
+            HashMap::default();
         for cell_meta in resolved_cell_deps {
+            // If a data load more than once, use the max block number.
+            let block_number_opt = data_loader
+                .load_transaction_info(cell_meta)
+                .map(|txinfo| txinfo.block_number);
             let data = data_loader.load_cell_data(cell_meta).expect("cell data");
             let data_hash = data_loader
                 .load_cell_data_hash(cell_meta)
                 .expect("cell data hash");
-            binaries_by_data_hash.insert(data_hash, data.to_owned());
+            binaries_by_data_hash
+                .entry(data_hash)
+                .and_modify(|e| {
+                    if let Some(block_number) = block_number_opt {
+                        if e.1.is_some() {
+                            if block_number > e.1.unwrap() {
+                                e.1 = Some(block_number)
+                            }
+                        } else {
+                            e.1 = Some(block_number)
+                        }
+                    }
+                })
+                .or_insert((data.to_owned(), block_number_opt));
             if let Some(t) = &cell_meta.cell_output.type_().to_opt() {
                 binaries_by_type_hash
                     .entry(t.calc_script_hash())
-                    .and_modify(|e| e.1 = true)
-                    .or_insert((data.to_owned(), false));
+                    .and_modify(|e| e.2 = true)
+                    .and_modify(|e| {
+                        if let Some(block_number) = block_number_opt {
+                            if e.1.is_some() {
+                                if block_number > e.1.unwrap() {
+                                    e.1 = Some(block_number)
+                                }
+                            } else {
+                                e.1 = Some(block_number)
+                            }
+                        }
+                    })
+                    .or_insert((data.to_owned(), block_number_opt, false));
             }
         }
 
@@ -258,22 +289,28 @@ impl<'a, DL: CellDataProvider + HeaderProvider> TransactionScriptsVerifier<'a, D
     }
 
     /// Extracts actual script binary either in dep cells.
-    pub fn extract_script(&self, script: &'a Script) -> Result<Bytes, ScriptError> {
+    pub fn extract_script(
+        &self,
+        script: &'a Script,
+    ) -> Result<(Bytes, Option<BlockNumber>), ScriptError> {
         match ScriptHashType::try_from(script.hash_type()).expect("checked data") {
             ScriptHashType::Data => {
-                if let Some(data) = self.binaries_by_data_hash.get(&script.code_hash()) {
-                    Ok(data.to_owned())
+                if let Some((data, block_number_opt)) =
+                    self.binaries_by_data_hash.get(&script.code_hash())
+                {
+                    Ok((data.to_owned(), block_number_opt.to_owned()))
                 } else {
                     Err(ScriptError::InvalidCodeHash)
                 }
             }
             ScriptHashType::Type => {
-                if let Some((data, multiple)) = self.binaries_by_type_hash.get(&script.code_hash())
+                if let Some((data, block_number_opt, multiple)) =
+                    self.binaries_by_type_hash.get(&script.code_hash())
                 {
                     if *multiple {
                         Err(ScriptError::MultipleMatches)
                     } else {
-                        Ok(data.to_owned())
+                        Ok((data.to_owned(), block_number_opt.to_owned()))
                     }
                 } else {
                     Err(ScriptError::InvalidCodeHash)
@@ -292,21 +329,28 @@ impl<'a, DL: CellDataProvider + HeaderProvider> TransactionScriptsVerifier<'a, D
     /// ## Returns
     ///
     /// It returns the total consumed cycles on success, Otherwise it returns the verification error.
-    pub fn verify(&self, max_cycles: Cycle) -> Result<Cycle, Error> {
+    pub fn verify(
+        &self,
+        block_number: BlockNumber,
+        hardfork_switch: &HardForkSwitch,
+        max_cycles: Cycle,
+    ) -> Result<Cycle, Error> {
         let mut cycles: Cycle = 0;
 
         // Now run each script group
         for group in self.lock_groups.values().chain(self.type_groups.values()) {
-            let cycle = self.verify_script_group(group, max_cycles).map_err(|e| {
-                #[cfg(feature = "logging")]
-                info!(
-                    "Error validating script group {} of transaction {}: {}",
-                    group.script.calc_script_hash(),
-                    self.hash(),
-                    e
-                );
-                e.source(group)
-            })?;
+            let cycle = self
+                .verify_script_group(block_number, hardfork_switch, group, max_cycles)
+                .map_err(|e| {
+                    #[cfg(feature = "logging")]
+                    info!(
+                        "Error validating script group {} of transaction {}: {}",
+                        group.script.calc_script_hash(),
+                        self.hash(),
+                        e
+                    );
+                    e.source(group)
+                })?;
             let current_cycles = cycles
                 .checked_add(cycle)
                 .ok_or_else(|| ScriptError::ExceededMaximumCycles(max_cycles).source(group))?;
@@ -324,18 +368,24 @@ impl<'a, DL: CellDataProvider + HeaderProvider> TransactionScriptsVerifier<'a, D
     /// CKB itself, it can be very helpful when building a CKB debugger.
     pub fn verify_single(
         &self,
+        block_number: BlockNumber,
+        hardfork_switch: &HardForkSwitch,
         script_group_type: ScriptGroupType,
         script_hash: &Byte32,
         max_cycles: Cycle,
     ) -> Result<Cycle, ScriptError> {
         match self.find_script_group(script_group_type, script_hash) {
-            Some(group) => self.verify_script_group(group, max_cycles),
+            Some(group) => {
+                self.verify_script_group(block_number, hardfork_switch, group, max_cycles)
+            }
             None => Err(ScriptError::InvalidCodeHash),
         }
     }
 
     fn verify_script_group(
         &self,
+        block_number: BlockNumber,
+        hardfork_switch: &HardForkSwitch,
         group: &ScriptGroup,
         max_cycles: Cycle,
     ) -> Result<Cycle, ScriptError> {
@@ -349,7 +399,7 @@ impl<'a, DL: CellDataProvider + HeaderProvider> TransactionScriptsVerifier<'a, D
             };
             verifier.verify()
         } else {
-            self.run(&group, max_cycles)
+            self.run(block_number, hardfork_switch, &group, max_cycles)
         }
     }
 
@@ -400,16 +450,18 @@ impl<'a, DL: CellDataProvider + HeaderProvider> TransactionScriptsVerifier<'a, D
         ]
     }
 
-    fn run(&self, script_group: &ScriptGroup, max_cycles: Cycle) -> Result<Cycle, ScriptError> {
-        let program = self.extract_script(&script_group.script)?;
-        #[cfg(has_asm)]
-        let core_machine = AsmCoreMachine::new(ISA_IMC | ISA_B, VERSION0, max_cycles);
-        #[cfg(not(has_asm))]
-        let core_machine = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
-            ISA_IMC | ISA_B,
-            VERSION0,
-            max_cycles,
-        );
+    fn run(
+        &self,
+        block_number: BlockNumber,
+        hardfork_switch: &HardForkSwitch,
+        script_group: &ScriptGroup,
+        max_cycles: Cycle,
+    ) -> Result<Cycle, ScriptError> {
+        let (program, block_number_opt) = self.extract_script(&script_group.script)?;
+        let core_machine = {
+            let hardfork = hardfork_switch.version(block_number_opt.unwrap_or(block_number));
+            hardforks::core_machine(hardfork, max_cycles)
+        };
         let machine_builder = DefaultMachineBuilder::<CoreMachineType>::new(core_machine)
             .instruction_cycle_func(self.cost_model());
         let machine_builder = self
@@ -446,7 +498,7 @@ impl<'a, DL: CellDataProvider + HeaderProvider> TransactionScriptsVerifier<'a, D
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::type_id::TYPE_ID_CYCLES;
+    use crate::{error::TransactionScriptError, type_id::TYPE_ID_CYCLES};
     use byteorder::{ByteOrder, LittleEndian};
     use ckb_crypto::secp::{Generator, Privkey, Pubkey, Signature};
     use ckb_db::RocksDB;
@@ -455,8 +507,8 @@ mod tests {
     use ckb_store::{data_loader_wrapper::DataLoaderWrapper, ChainDB};
     use ckb_types::{
         core::{
-            capacity_bytes, cell::CellMetaBuilder, Capacity, Cycle, DepType, ScriptHashType,
-            TransactionBuilder, TransactionInfo,
+            capacity_bytes, cell::CellMetaBuilder, hardforks::HardForkSwitch, Capacity, Cycle,
+            DepType, ScriptHashType, TransactionBuilder, TransactionInfo,
         },
         h256,
         packed::{
@@ -546,6 +598,39 @@ mod tests {
             .unpack()
     }
 
+    fn assert_verify_ok<DL>(verifier: &TransactionScriptsVerifier<DL>, max_cycles: Cycle)
+    where
+        DL: CellDataProvider + HeaderProvider,
+    {
+        assert!(verifier
+            .verify(0, &HardForkSwitch::always_no_fork(), max_cycles)
+            .is_ok());
+        assert!(verifier
+            .verify(0, &HardForkSwitch::always_v2021(), max_cycles)
+            .is_ok());
+    }
+
+    fn assert_verify_err<DL>(
+        verifier: &TransactionScriptsVerifier<DL>,
+        max_cycles: Cycle,
+        error: TransactionScriptError,
+    ) where
+        DL: CellDataProvider + HeaderProvider,
+    {
+        assert_error_eq!(
+            verifier
+                .verify(0, &HardForkSwitch::always_no_fork(), max_cycles)
+                .unwrap_err(),
+            error.clone()
+        );
+        assert_error_eq!(
+            verifier
+                .verify(0, &HardForkSwitch::always_v2021(), max_cycles)
+                .unwrap_err(),
+            error
+        );
+    }
+
     #[test]
     fn check_always_success_hash() {
         let (always_success_cell, always_success_cell_data, always_success_script) =
@@ -579,7 +664,7 @@ mod tests {
         let data_loader = DataLoaderWrapper::new(&store);
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
-        assert!(verifier.verify(600).is_ok());
+        assert_verify_ok(&verifier, 600);
     }
 
     #[test]
@@ -640,18 +725,17 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert!(verifier.verify(100_000_000).is_ok());
+        assert_verify_ok(&verifier, 100_000_000);
 
         // Not enough cycles
-        assert_error_eq!(
-            verifier
-                .verify(ALWAYS_SUCCESS_SCRIPT_CYCLE - 1)
-                .unwrap_err(),
+        assert_verify_err(
+            &verifier,
+            ALWAYS_SUCCESS_SCRIPT_CYCLE - 1,
             ScriptError::ExceededMaximumCycles(ALWAYS_SUCCESS_SCRIPT_CYCLE - 1)
                 .input_lock_script(0),
         );
 
-        assert!(verifier.verify(100_000_000).is_ok());
+        assert_verify_ok(&verifier, 100_000_000);
     }
 
     #[test]
@@ -721,7 +805,7 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert!(verifier.verify(100_000_000).is_ok());
+        assert_verify_ok(&verifier, 100_000_000);
     }
 
     #[test]
@@ -813,8 +897,9 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert_error_eq!(
-            verifier.verify(100_000_000).unwrap_err(),
+        assert_verify_err(
+            &verifier,
+            100_000_000,
             ScriptError::MultipleMatches.input_lock_script(0),
         );
     }
@@ -877,8 +962,9 @@ mod tests {
         let data_loader = DataLoaderWrapper::new(&store);
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert_error_eq!(
-            verifier.verify(100_000_000).unwrap_err(),
+        assert_verify_err(
+            &verifier,
+            100_000_000,
             ScriptError::ValidationFailure(-1).input_lock_script(0),
         );
     }
@@ -929,8 +1015,9 @@ mod tests {
         let data_loader = DataLoaderWrapper::new(&store);
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert_error_eq!(
-            verifier.verify(100_000_000).unwrap_err(),
+        assert_verify_err(
+            &verifier,
+            100_000_000,
             ScriptError::InvalidCodeHash.input_lock_script(0),
         );
     }
@@ -1012,7 +1099,7 @@ mod tests {
         let data_loader = DataLoaderWrapper::new(&store);
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert!(verifier.verify(100_000_000).is_ok());
+        assert_verify_ok(&verifier, 100_000_000);
     }
 
     #[test]
@@ -1087,8 +1174,9 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert_error_eq!(
-            verifier.verify(100_000_000).unwrap_err(),
+        assert_verify_err(
+            &verifier,
+            100_000_000,
             ScriptError::ValidationFailure(-1).output_type_script(0),
         );
     }
@@ -1153,8 +1241,17 @@ mod tests {
 
         // Cycles can tell that both lock and type scripts are executed
         assert_eq!(
-            verifier.verify(100_000_000).ok(),
-            Some(ALWAYS_SUCCESS_SCRIPT_CYCLE * 2)
+            verifier
+                .verify(0, &HardForkSwitch::always_no_fork(), 100_000_000)
+                .ok(),
+            Some(ALWAYS_SUCCESS_SCRIPT_CYCLE * 2),
+        );
+        // TODO next-gen cycles changed, confirm?
+        assert_eq!(
+            verifier
+                .verify(0, &HardForkSwitch::always_v2021(), 100_000_000)
+                .ok(),
+            Some(ALWAYS_SUCCESS_SCRIPT_CYCLE * 2 + 4),
         );
     }
 
@@ -1215,9 +1312,7 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        if let Err(err) = verifier.verify(TYPE_ID_CYCLES * 2) {
-            panic!("expect verification ok, got: {:?}", err);
-        }
+        assert_verify_ok(&verifier, TYPE_ID_CYCLES * 2);
     }
 
     #[test]
@@ -1277,8 +1372,9 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert_error_eq!(
-            verifier.verify(TYPE_ID_CYCLES - 1).unwrap_err(),
+        assert_verify_err(
+            &verifier,
+            TYPE_ID_CYCLES - 1,
             ScriptError::ExceededMaximumCycles(TYPE_ID_CYCLES - 1).input_type_script(0),
         );
     }
@@ -1348,7 +1444,7 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert!(verifier.verify(1_001_000).is_ok());
+        assert_verify_ok(&verifier, 1_001_000);
     }
 
     #[test]
@@ -1407,7 +1503,7 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert!(verifier.verify(1_001_000).is_ok());
+        assert_verify_ok(&verifier, 1_001_000);
     }
 
     #[test]
@@ -1481,8 +1577,9 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert_error_eq!(
-            verifier.verify(1_001_000).unwrap_err(),
+        assert_verify_err(
+            &verifier,
+            1_001_000,
             ScriptError::ValidationFailure(-3).output_type_script(0),
         );
     }
@@ -1561,8 +1658,9 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert_error_eq!(
-            verifier.verify(1_001_000).unwrap_err(),
+        assert_verify_err(
+            &verifier,
+            1_001_000,
             ScriptError::ValidationFailure(-1).output_type_script(0),
         );
     }
@@ -1630,8 +1728,9 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        assert_error_eq!(
-            verifier.verify(TYPE_ID_CYCLES * 2).unwrap_err(),
+        assert_verify_err(
+            &verifier,
+            TYPE_ID_CYCLES * 2,
             ScriptError::ValidationFailure(-2).input_type_script(0),
         );
     }
@@ -1787,7 +1886,15 @@ mod tests {
 
         let verifier = TransactionScriptsVerifier::new(&rtx, &data_loader);
 
-        let cycle = verifier.verify(TWO_IN_TWO_OUT_CYCLES).unwrap();
+        let cycle = verifier
+            .verify(0, &HardForkSwitch::always_no_fork(), TWO_IN_TWO_OUT_CYCLES)
+            .unwrap();
+        assert!(cycle <= TWO_IN_TWO_OUT_CYCLES);
+        assert!(cycle >= TWO_IN_TWO_OUT_CYCLES - CYCLE_BOUND);
+
+        let cycle = verifier
+            .verify(0, &HardForkSwitch::always_v2021(), TWO_IN_TWO_OUT_CYCLES)
+            .unwrap();
         assert!(cycle <= TWO_IN_TWO_OUT_CYCLES);
         assert!(cycle >= TWO_IN_TWO_OUT_CYCLES - CYCLE_BOUND);
     }

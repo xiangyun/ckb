@@ -383,8 +383,13 @@ impl<'a> DryRunner<'a> {
             Ok(resolved) => {
                 let consensus = snapshot.consensus();
                 let max_cycles = consensus.max_block_cycles;
-                match ScriptVerifier::new(&resolved, &snapshot.as_data_provider())
-                    .verify(max_cycles)
+                match ScriptVerifier::new(
+                    &resolved,
+                    &snapshot.as_data_provider(),
+                    snapshot.tip_number() + 1,
+                    consensus.hardfork_switch().to_owned(),
+                )
+                .verify(max_cycles)
                 {
                     Ok(cycles) => Ok(DryRunResult {
                         cycles: cycles.into(),

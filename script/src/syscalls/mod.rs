@@ -175,6 +175,7 @@ impl Source {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hardforks;
     use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
     use ckb_db::RocksDB;
     use ckb_db_schema::COLUMNS;
@@ -184,8 +185,8 @@ mod tests {
     use ckb_types::{
         bytes::Bytes,
         core::{
-            cell::CellMeta, Capacity, EpochNumberWithFraction, HeaderBuilder, HeaderView,
-            ScriptHashType, TransactionBuilder, TransactionInfo,
+            cell::CellMeta, hardforks::HardFork, Capacity, EpochNumberWithFraction, HeaderBuilder,
+            HeaderView, ScriptHashType, TransactionBuilder, TransactionInfo,
         },
         packed::{Byte32, CellOutput, OutPoint, Script, ScriptBuilder},
         prelude::*,
@@ -193,11 +194,9 @@ mod tests {
     };
     use ckb_vm::machine::DefaultCoreMachine;
     use ckb_vm::{
-        machine::VERSION0,
         memory::{FLAG_DIRTY, FLAG_EXECUTABLE, FLAG_FREEZED, FLAG_WRITABLE},
         registers::{A0, A1, A2, A3, A4, A5, A7},
-        CoreMachine, Error as VMError, Memory, SparseMemory, Syscalls, WXorXMemory, ISA_IMC,
-        RISCV_PAGESIZE,
+        CoreMachine, Error as VMError, Memory, SparseMemory, Syscalls, RISCV_PAGESIZE,
     };
     use proptest::{collection::size_range, prelude::*};
     use std::collections::HashMap;
@@ -1071,12 +1070,8 @@ mod tests {
         }
     }
 
-    fn _test_load_cell_data_as_code(data: &[u8]) -> Result<(), TestCaseError> {
-        let mut machine = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
-            ISA_IMC,
-            VERSION0,
-            u64::max_value(),
-        );
+    fn _test_load_cell_data_as_code(data: &[u8], hardfork: HardFork) -> Result<(), TestCaseError> {
+        let mut machine = hardforks::default_core_machine(hardfork, u64::max_value());
 
         let addr = 4096;
         let addr_size = 4096;
@@ -1131,12 +1126,8 @@ mod tests {
         Ok(())
     }
 
-    fn _test_load_cell_data(data: &[u8]) -> Result<(), TestCaseError> {
-        let mut machine = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
-            ISA_IMC,
-            VERSION0,
-            u64::max_value(),
-        );
+    fn _test_load_cell_data(data: &[u8], hardfork: HardFork) -> Result<(), TestCaseError> {
+        let mut machine = hardforks::default_core_machine(hardfork, u64::max_value());
         let size_addr: u64 = 100;
         let addr = 4096;
         let addr_size = 4096;
@@ -1196,23 +1187,26 @@ mod tests {
         })]
         #[test]
         fn test_load_code(ref data in any_with::<Vec<u8>>(size_range(4096).lift())) {
-            _test_load_cell_data_as_code(data)?;
+            _test_load_cell_data_as_code(data, HardFork::Not)?;
+            _test_load_cell_data_as_code(data, HardFork::V2021)?;
         }
 
         #[test]
         fn test_load_data(ref data in any_with::<Vec<u8>>(size_range(4096).lift())) {
-            _test_load_cell_data(data)?;
+            _test_load_cell_data(data, HardFork::Not)?;
+            _test_load_cell_data(data, HardFork::V2021)?;
         }
     }
 
     #[test]
     fn test_load_overflowed_cell_data_as_code() {
+        _test_load_overflowed_cell_data_as_code(HardFork::Not);
+        _test_load_overflowed_cell_data_as_code(HardFork::V2021);
+    }
+
+    fn _test_load_overflowed_cell_data_as_code(hardfork: HardFork) {
         let data = vec![0, 1, 2, 3, 4, 5];
-        let mut machine = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
-            ISA_IMC,
-            VERSION0,
-            u64::max_value(),
-        );
+        let mut machine = hardforks::default_core_machine(hardfork, u64::max_value());
         let addr = 4096;
         let addr_size = 4096;
 
@@ -1252,12 +1246,9 @@ mod tests {
     fn _test_load_cell_data_on_freezed_memory(
         as_code: bool,
         data: &[u8],
+        hardfork: HardFork,
     ) -> Result<(), TestCaseError> {
-        let mut machine = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
-            ISA_IMC,
-            VERSION0,
-            u64::max_value(),
-        );
+        let mut machine = hardforks::default_core_machine(hardfork, u64::max_value());
         let addr = 8192;
         let addr_size = 4096;
 
@@ -1312,22 +1303,25 @@ mod tests {
         })]
         #[test]
         fn test_load_code_on_freezed_memory(ref data in any_with::<Vec<u8>>(size_range(4096).lift())) {
-            _test_load_cell_data_on_freezed_memory(true, data)?;
+            _test_load_cell_data_on_freezed_memory(true, data, HardFork::Not)?;
+            _test_load_cell_data_on_freezed_memory(true, data, HardFork::V2021)?;
         }
 
         #[test]
         fn test_load_data_on_freezed_memory(ref data in any_with::<Vec<u8>>(size_range(4096).lift())) {
-            _test_load_cell_data_on_freezed_memory(false, data)?;
+            _test_load_cell_data_on_freezed_memory(false, data, HardFork::Not)?;
+            _test_load_cell_data_on_freezed_memory(false, data, HardFork::V2021)?;
         }
     }
 
     #[test]
     fn test_load_code_unaligned_error() {
-        let mut machine = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
-            ISA_IMC,
-            VERSION0,
-            u64::max_value(),
-        );
+        _test_load_code_unaligned_error(HardFork::Not);
+        _test_load_code_unaligned_error(HardFork::V2021);
+    }
+
+    fn _test_load_code_unaligned_error(hardfork: HardFork) {
+        let mut machine = hardforks::default_core_machine(hardfork, u64::max_value());
         let addr = 4097;
         let addr_size = 4096;
         let data = [2; 32];
@@ -1369,11 +1363,12 @@ mod tests {
 
     #[test]
     fn test_load_code_slice_out_of_bound_error() {
-        let mut machine = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
-            ISA_IMC,
-            VERSION0,
-            u64::max_value(),
-        );
+        _test_load_code_slice_out_of_bound_error(HardFork::Not);
+        _test_load_code_slice_out_of_bound_error(HardFork::V2021);
+    }
+
+    fn _test_load_code_slice_out_of_bound_error(hardfork: HardFork) {
+        let mut machine = hardforks::default_core_machine(hardfork, u64::max_value());
         let addr = 4096;
         let addr_size = 4096;
         let data = [2; 32];
@@ -1417,11 +1412,12 @@ mod tests {
 
     #[test]
     fn test_load_code_not_enough_space_error() {
-        let mut machine = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
-            ISA_IMC,
-            VERSION0,
-            u64::max_value(),
-        );
+        _test_load_code_not_enough_space_error(HardFork::Not);
+        _test_load_code_not_enough_space_error(HardFork::V2021);
+    }
+
+    fn _test_load_code_not_enough_space_error(hardfork: HardFork) {
+        let mut machine = hardforks::default_core_machine(hardfork, u64::max_value());
         let addr = 4096;
         let addr_size = 4096;
 
