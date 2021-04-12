@@ -88,6 +88,12 @@ impl Edges {
             self.deps.remove(out_point);
         }
     }
+
+    pub(crate) fn clear(&mut self) {
+        self.outputs.clear();
+        self.inputs.clear();
+        self.deps.clear();
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -319,6 +325,11 @@ impl ProposedPool {
     /// find all descendants from pool
     pub fn get_descendants(&self, tx_short_id: &ProposalShortId) -> HashSet<ProposalShortId> {
         self.inner.get_descendants(&tx_short_id)
+    }
+
+    pub(crate) fn drain(&mut self) -> Vec<TransactionView> {
+        self.edges.clear();
+        self.inner.drain()
     }
 }
 

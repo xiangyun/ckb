@@ -592,28 +592,60 @@ impl TxPoolService {
         let mut detached = LinkedHashSet::default();
         let mut attached = LinkedHashSet::default();
 
+        let mut detached_blocks_range = (0, 0);
+        let mut attached_blocks_range = (0, 0);
+
         for blk in detached_blocks {
+            detached_blocks_range.0 = cmp::min(detached_blocks_range.0, blk.number());
+            detached_blocks_range.1 = cmp::max(detached_blocks_range.0, blk.number());
             detached.extend(blk.transactions().into_iter().skip(1))
         }
 
         for blk in attached_blocks {
+            attached_blocks_range.0 = cmp::min(attached_blocks_range.0, blk.number());
+            attached_blocks_range.1 = cmp::max(attached_blocks_range.1, blk.number());
             attached.extend(blk.transactions().into_iter().skip(1));
         }
+
         let retain: Vec<TransactionView> = detached.difference(&attached).cloned().collect();
+
+        let hardfork_switch = snapshot.consensus().hardfork_switch();
+        let hardfork_during_detach = hardfork_switch
+            .version(detached_blocks_range.0.saturating_sub(1))
+            != hardfork_switch.version(detached_blocks_range.1);
+        let hardfork_during_attach = hardfork_switch
+            .version(attached_blocks_range.0.saturating_sub(1))
+            != hardfork_switch.version(attached_blocks_range.1);
 
         let fetched_cache = self.fetch_txs_verify_cache(retain.iter()).await;
 
         {
-            let mut tx_pool = self.tx_pool.write().await;
-            _update_tx_pool_for_reorg(
-                &mut tx_pool,
-                &attached,
-                detached_proposal_id,
-                snapshot,
-                &self.callbacks,
-            );
+            let txs = {
+                // This closure is used to limit the lifetime of mutable tx_pool.
+                let mut tx_pool = self.tx_pool.write().await;
 
-            self.readd_dettached_tx(&mut tx_pool, retain, fetched_cache)
+                let txs = if hardfork_during_detach || hardfork_during_attach {
+                    // Since the tx_pool is locked, then remove all caches if has any hardfork.
+                    self.txs_verify_cache.write().await.clear();
+                    tx_pool.drain_all_transactions()
+                } else {
+                    Default::default()
+                };
+
+                _update_tx_pool_for_reorg(
+                    &mut tx_pool,
+                    &attached,
+                    detached_proposal_id,
+                    snapshot,
+                    &self.callbacks,
+                );
+
+                self.readd_dettached_tx(&mut tx_pool, retain, fetched_cache);
+
+                txs
+            };
+
+            self.try_process_txs(txs).await;
         }
 
         {
@@ -645,6 +677,28 @@ impl TxPoolService {
                     }
                 }
             }
+        }
+    }
+
+    async fn try_process_txs(&self, txs: Vec<TransactionView>) {
+        // a trick to commit transactions with the correct order
+        let mut remain_size = txs.len();
+        let mut txs_next_turn = Vec::new();
+        for tx in txs {
+            if self._process_tx(tx.clone(), None).await.is_err() {
+                txs_next_turn.push(tx);
+            }
+        }
+        // Break only if no more transaction can be processed.
+        while !txs_next_turn.is_empty() && remain_size != txs_next_turn.len() {
+            remain_size = txs_next_turn.len();
+            let mut txs_failed = Vec::new();
+            for tx in txs_next_turn {
+                if self._process_tx(tx.clone(), None).await.is_err() {
+                    txs_failed.push(tx);
+                }
+            }
+            txs_next_turn = txs_failed;
         }
     }
 

@@ -104,6 +104,10 @@ impl PendingQueue {
             }
         }
     }
+
+    pub(crate) fn drain(&mut self) -> Vec<TransactionView> {
+        self.inner.drain()
+    }
 }
 
 impl CellProvider for PendingQueue {

@@ -13,6 +13,7 @@ use ckb_store::{attach_block_cell, detach_block_cell, ChainStore, StoreTransacti
 use ckb_types::{
     core::{
         cell::{resolve_transaction, BlockCellProvider, OverlayCellProvider, ResolvedTransaction},
+        hardforks::HardForkSwitch,
         service::{Request, DEFAULT_CHANNEL_SIZE, SIGNAL_CHANNEL_SIZE},
         BlockExt, BlockNumber, BlockView, HeaderView,
     },
@@ -134,6 +135,41 @@ impl ForkChanges {
         }) && IsSorted::is_sorted_by_key(&mut self.detached_blocks().iter(), |blk| {
             blk.header().number()
         })
+    }
+
+    /// Returns a list of block numbers that split the attached blocks by hard fork versions.
+    ///
+    /// # Notice
+    /// This method assumes that the attached blocks is sorted.
+    fn hardfork_last_numbers_during_attach(
+        &self,
+        hardfork_switch: &HardForkSwitch,
+    ) -> Vec<BlockNumber> {
+        let mut hardfork_last_numbers = Vec::new();
+        if !self.attached_blocks().is_empty() {
+            let mut block_number_pre = self
+                .attached_blocks()
+                .iter()
+                .map(BlockView::number)
+                .min()
+                .unwrap()
+                .saturating_sub(1);
+            let mut hardfork_version_pre = hardfork_switch.version(block_number_pre);
+            for (number, hardfork) in self
+                .attached_blocks()
+                .iter()
+                .map(BlockView::number)
+                .map(|block_number| (block_number, hardfork_switch.version(block_number)))
+            {
+                if hardfork_version_pre != hardfork {
+                    hardfork_last_numbers.push(block_number_pre);
+                    hardfork_version_pre = hardfork;
+                }
+                block_number_pre = number;
+            }
+            hardfork_last_numbers.push(block_number_pre);
+        }
+        hardfork_last_numbers
     }
 }
 
@@ -442,14 +478,53 @@ impl ChainService {
 
             self.shared.store_snapshot(Arc::clone(&new_snapshot));
 
-            if let Err(e) = self.shared.tx_pool_controller().update_tx_pool_for_reorg(
-                fork.detached_blocks().clone(),
-                fork.attached_blocks().clone(),
-                fork.detached_proposal_id().clone(),
-                new_snapshot,
-            ) {
-                error!("notify update_tx_pool_for_reorg error {}", e);
+            let hardfork_switch = self.shared.consensus().hardfork_switch();
+            let hardfork_last_numbers = fork.hardfork_last_numbers_during_attach(hardfork_switch);
+
+            {
+                // Only attach blocks that have the same hard fork version with previous block.
+                let blocks = if hardfork_last_numbers.is_empty() {
+                    Default::default()
+                } else {
+                    fork.attached_blocks()
+                        .iter()
+                        .filter(|block| block.number() <= hardfork_last_numbers[0])
+                        .map(ToOwned::to_owned)
+                        .collect()
+                };
+                if let Err(e) = self.shared.tx_pool_controller().update_tx_pool_for_reorg(
+                    fork.detached_blocks().clone(),
+                    blocks,
+                    fork.detached_proposal_id().clone(),
+                    Arc::clone(&new_snapshot),
+                ) {
+                    error!("update_tx_pool_for_reorg error {}", e);
+                }
             }
+
+            // In each turn, only attach blocks that have the same hard fork version.
+            for numbers in hardfork_last_numbers.windows(2) {
+                let blocks = fork
+                    .attached_blocks()
+                    .iter()
+                    .filter(|block| {
+                        let number = block.number();
+                        numbers[0] < number && number <= numbers[1]
+                    })
+                    .map(ToOwned::to_owned)
+                    .collect::<VecDeque<_>>();
+                if !blocks.is_empty() {
+                    if let Err(e) = self.shared.tx_pool_controller().update_tx_pool_for_reorg(
+                        Default::default(),
+                        blocks,
+                        Default::default(),
+                        Arc::clone(&new_snapshot),
+                    ) {
+                        error!("update_tx_pool_for_reorg error {}", e);
+                    }
+                }
+            }
+
             for detached_block in fork.detached_blocks() {
                 if let Err(e) = self
                     .shared

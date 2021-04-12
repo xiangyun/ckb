@@ -2,7 +2,10 @@
 //! and its top-level members.
 
 use crate::{component::entry::TxEntry, error::Reject};
-use ckb_types::{core::Capacity, packed::ProposalShortId};
+use ckb_types::{
+    core::{Capacity, TransactionView},
+    packed::ProposalShortId,
+};
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 
@@ -326,6 +329,16 @@ impl SortedTxMap {
                 .ancestors_count
         });
         keys
+    }
+
+    /// Clear and return all transactions.
+    pub(crate) fn drain(&mut self) -> Vec<TransactionView> {
+        self.sorted_index.clear();
+        self.links.clear();
+        self.entries
+            .drain()
+            .map(|(_, entry)| entry.transaction().to_owned())
+            .collect()
     }
 }
 
